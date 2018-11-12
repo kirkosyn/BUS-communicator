@@ -29,6 +29,8 @@ namespace Communicator
         /// </summary>
         string receivedMessage = "";
 
+        private int primitiveRoot;
+
         /// <summary>
         /// Konstruktor socketa clienta
         /// </summary>
@@ -42,7 +44,9 @@ namespace Communicator
             clientSocket = new Socket(ipAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             clientSocket.Bind(localEndPoint);
-            GeneratePrimeNumber();
+
+            Protocol keys = new Protocol();
+            
         }
 
         /// <summary>
@@ -146,18 +150,6 @@ namespace Communicator
             return msg;
         }
 
-        /// <summary>
-        /// Generowanie liczby pierwszej z pliku
-        /// </summary>
-        public void GeneratePrimeNumber()
-        {
-            string fileStream = @"primes.txt", line;
-            Random rnd = new Random();
-            int number = rnd.Next(0, 10000) * 2;
-            line = File.ReadLines(fileStream).Skip(number).Take(1).First();
-            int prime = Int32.Parse(line);
-            //System.IO.File.WriteAllText(@"line.txt", line);
-        }
 
 
         public void Accept()
