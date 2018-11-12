@@ -29,8 +29,6 @@ namespace Communicator
         /// </summary>
         string receivedMessage = "";
 
-        private int primitiveRoot;
-
         /// <summary>
         /// Konstruktor socketa clienta
         /// </summary>
@@ -45,7 +43,6 @@ namespace Communicator
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             clientSocket.Bind(localEndPoint);
 
-            Protocol keys = new Protocol();
             
         }
 

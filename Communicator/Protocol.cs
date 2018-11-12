@@ -11,10 +11,34 @@ namespace Communicator
 {
     class Protocol
     {
+        /// <summary>
+        /// Lista dzielników pierwszych
+        /// </summary>
         private List<int> primeFactors;
+        /// <summary>
+        /// Lista testów
+        /// </summary>
         private List<int> tests;
+        /// <summary>
+        /// Liczba pierwsza
+        /// </summary>
         private int primeNumber;
+        /// <summary>
+        /// Pierwiastek pierwotny
+        /// </summary>
         private int primitiveRoot;
+        /// <summary>
+        /// Tajna liczba całkowita
+        /// </summary>
+        private int secretNumber;
+        /// <summary>
+        /// Liczba do wysłania
+        /// </summary>
+        private BigInteger numberToSend;
+        /// <summary>
+        /// Tajna współdzielona liczba
+        /// </summary>
+        private BigInteger s;
 
         /// <summary>
         /// Konstruktor protokołu Diffiego-Hellmana
@@ -23,6 +47,34 @@ namespace Communicator
         {
             GeneratePrimeNumber();
             FindPrimitiveRoot();
+        }
+
+        /// <summary>
+        /// Generowanie tajnej liczby całkowitej
+        /// </summary>
+        public void GenerateNumber()
+        {
+            Random rnd = new Random();
+            secretNumber = rnd.Next(0, 10000000);
+        }
+
+        /// <summary>
+        /// Tworzenie liczby do wysłania drugiej osobie
+        /// </summary>
+        public void CreateNumberToSend()
+        {
+            numberToSend = new BigInteger();
+            numberToSend = BigInteger.ModPow(primitiveRoot, secretNumber, primeNumber);
+        }
+
+        /// <summary>
+        /// Obliczanie współdzielonej liczby
+        /// </summary>
+        /// <param name="number">liczba uzyskana od drugiej osoby</param>
+        public void CalculateReceivedNumber(BigInteger number)
+        {
+            s = new BigInteger();
+            s = BigInteger.ModPow(number, secretNumber, primeNumber);
         }
         /// <summary>
         /// Generowanie liczby pierwszej z pliku
