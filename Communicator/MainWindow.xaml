@@ -1,0 +1,29 @@
+﻿<Window x:Class="Communicator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Communicator"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="340.136" Width="723.428">
+    <Grid x:Name="toIP1" Margin="0,0,0.333,0" Height="419" VerticalAlignment="Top">
+        <Button x:Name="SendMsg" Content="SEND" HorizontalAlignment="Left" Height="43" Margin="247,239,0,0" VerticalAlignment="Top" Width="59" Click="SendMessage"/>
+        <PasswordBox HorizontalAlignment="Left" Margin="262,356,0,0" VerticalAlignment="Top"/>
+        <PasswordBox HorizontalAlignment="Left" Height="43" Margin="353,239,0,0" VerticalAlignment="Top" Width="237" Password="password"/>
+        <Label Content="CHAT" HorizontalAlignment="Left" Height="32" Margin="10,10,0,0" VerticalAlignment="Top" Width="296"/>
+        <TextBox  x:Name="Message" HorizontalAlignment="Left" Height="43" Margin="10,239,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="237" KeyDown="TextBox_Enter"/>
+        <ListBox x:Name="List" HorizontalAlignment="Left" Height="187" Margin="10,47,0,0" VerticalAlignment="Top" Width="296"/>
+        <Button x:Name="SocketConnect" Content="CONNECT" HorizontalAlignment="Left" Height="28" Margin="596,126,0,0" VerticalAlignment="Top" Width="106" Click="SocketConnect_Click"/>
+        <TextBox x:Name="toIP" HorizontalAlignment="Left" Height="28" Margin="353,126,0,0" TextWrapping="Wrap" Text="127.0.0.2" VerticalAlignment="Top" Width="93" />
+        <TextBox x:Name="toPORT" HorizontalAlignment="Left" Height="28" Margin="466,126,0,0" TextWrapping="Wrap" Text="11002" VerticalAlignment="Top" Width="93"/>
+        <TextBox x:Name="myIP" HorizontalAlignment="Left" Height="28" Margin="353,47,0,0" TextWrapping="Wrap" Text="127.0.0.1" VerticalAlignment="Top" Width="93"/>
+        <TextBox x:Name="myPORT" HorizontalAlignment="Left" Height="28" Margin="466,47,0,0" TextWrapping="Wrap" Text="11001" VerticalAlignment="Top" Width="93"/>
+        <Label Content="myIP" HorizontalAlignment="Left" Margin="353,10,0,0" VerticalAlignment="Top" Width="45"/>
+        <Label Content="myPort" HorizontalAlignment="Left" Margin="466,10,0,0" VerticalAlignment="Top"/>
+        <Label Content="toIP" HorizontalAlignment="Left" Margin="353,95,0,0" VerticalAlignment="Top" Width="45"/>
+        <Label Content="toPort" HorizontalAlignment="Left" Margin="466,95,0,0" VerticalAlignment="Top" Width="48"/>
+        <Button x:Name="SetMySocket" Content="SET MY SOCKET" HorizontalAlignment="Left" Height="28" Margin="596,47,0,0" VerticalAlignment="Top" Width="106" Click="SetMySocket_Click"/>
+        <Button x:Name="SocketDisconnect" Content="DISCONNECT" HorizontalAlignment="Left" Height="28" Margin="596,159,0,0" VerticalAlignment="Top" Width="106" Click="SocketDisconnect_Click"/>
+
+    </Grid>
+</Window>
