@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -40,13 +41,28 @@ namespace Communicator
         /// </summary>
         private BigInteger s;
 
+        public Tuple<BigInteger,BigInteger> keyPrivate;
+        public Tuple<BigInteger, BigInteger> keyPublic;
+
         /// <summary>
         /// Konstruktor protokołu Diffiego-Hellmana
         /// </summary>
         public Protocol()
         {
-            GeneratePrimeNumber();
+            primeNumber = GeneratePrimeNumber();
             FindPrimitiveRoot();
+            SetKeys();
+        }
+
+        /// <summary>
+        /// Konstruktor protokołu Diffiego-Hellmana z parametrami
+        /// </summary>
+        /// <param name="primeNumber">liczba pierwsza</param>
+        /// <param name="primitiveRoot">pierwiastek pierwotny</param>
+        public Protocol(int primeNumber, int primitiveRoot)
+        {
+            this.primeNumber = primeNumber;
+            this.primitiveRoot = primitiveRoot;
         }
 
         /// <summary>
@@ -79,14 +95,14 @@ namespace Communicator
         /// <summary>
         /// Generowanie liczby pierwszej z pliku
         /// </summary>
-        public void GeneratePrimeNumber()
+        public int GeneratePrimeNumber()
         {
             string fileStream = @"primes.txt", line;
             Random rnd = new Random();
-            int number = rnd.Next(0, 10000) * 2;
+            int number = rnd.Next(0, 9999) * 2;
             line = File.ReadLines(fileStream).Skip(number).Take(1).First();
 
-            primeNumber = Int32.Parse(line);
+            return Int32.Parse(line);
         }
 
         /// <summary>
@@ -198,6 +214,124 @@ namespace Communicator
         public int GetPrimitiveRoot()
         {
             return primitiveRoot;
+        }
+
+        /// <summary>
+        /// Ustawianie liczby pierwszej
+        /// </summary>
+        /// <param name="primeNumber">wartość liczby</param>
+        public void SetPrimeNumber(int primeNumber)
+        {
+            this.primeNumber = primeNumber;
+        }
+
+        /// <summary>
+        /// Ustawianie pierwiastka pierwotnego
+        /// </summary>
+        /// <param name="primitiveRoot">wartość pierwiastka</param>
+        public void SetPrimitiveRoot(int primitiveRoot)
+        {
+            this.primitiveRoot = primitiveRoot;
+        }
+
+        public BigInteger FindCoprime(BigInteger a, BigInteger b, BigInteger n)
+        {
+            BigInteger result = BigInteger.Multiply((a - 1), (b - 1));
+            BigInteger coprime = n - 1;
+            while (coprime != 0)
+            {
+                if (BigInteger.GreatestCommonDivisor(coprime, result) == 1)
+                    break;
+                coprime--;
+            }
+            return coprime;
+        }
+
+        public BigInteger ModInverse(BigInteger a, BigInteger b)
+        {
+            BigInteger b0 = b, t, q;
+            BigInteger x0 = 0, x1 = 1;
+            if (b == 1)
+                return 1;
+            while (a > 1)
+            {
+                q = BigInteger.Divide(a, b);
+                t = b;
+                b = BigInteger.ModPow(a, 1, b);
+                a = t;
+                t = x0;
+                x0 = BigInteger.Subtract(x1, BigInteger.Multiply(q, x0));
+                x1 = t;
+            }
+            if (x1 < 0)
+                x1 = BigInteger.Add(x1, b0);
+
+            return x1;
+        }
+          
+        public void SetKeys()
+        {
+            int p, q;
+            p = GeneratePrimeNumber();
+            q = GeneratePrimeNumber();
+            
+            BigInteger n = p * q;
+            BigInteger e = FindCoprime(p, q, n);
+            
+            keyPublic = Tuple.Create(n, e);
+            BigInteger d = ModInverse(e, (p - 1) * (q - 1));
+            keyPrivate = Tuple.Create(n, d);
+           
+        }
+        public void HashSign()
+        {
+            RSAParameters _rsaParams = new RSAParameters();
+            _rsaParams.Modulus = keyPrivate.Item1.ToByteArray();
+            _rsaParams.Exponent = keyPrivate.Item2.ToByteArray();
+
+            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+            rsaCSP.ImportParameters(_rsaParams);
+
+            HashProgram hash = new HashProgram();
+
+            rsaCSP.SignHash(hash.DoHash("Hello"), CryptoConfig.MapNameToOID("SHA256"));
+        }
+
+        public byte[] EncryptData(RSAParameters rsaParams, byte[] toEncrypt)
+        {
+            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+
+            rsaCSP.ImportParameters(rsaParams);
+            return rsaCSP.Encrypt(toEncrypt, false);
+        }
+
+        public bool VerifyHash(RSAParameters rsaParams, byte[] signedData, byte[] signature)
+        {
+            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+            rsaCSP.ImportParameters(rsaParams);
+
+            bool dataOK = rsaCSP.VerifyData(signedData, CryptoConfig.MapNameToOID("SHA256"), signature);
+            HashProgram hash = new HashProgram();
+
+            return rsaCSP.VerifyHash(hash.DoHash(signedData), CryptoConfig.MapNameToOID("SHA256"), signature);
+        }
+
+        public void DecryptData(byte[] encrypted)
+        {
+            byte[] fromEncrypt;
+            string roundTrip;
+            ASCIIEncoding myAscii = new ASCIIEncoding();
+            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+
+            RSAParameters _rsaParams = new RSAParameters();
+            _rsaParams.Modulus = keyPrivate.Item1.ToByteArray();
+            _rsaParams.Exponent = keyPrivate.Item2.ToByteArray();
+
+            rsaCSP.ImportParameters(_rsaParams);
+            fromEncrypt = rsaCSP.Decrypt(encrypted, false);
+            roundTrip = myAscii.GetString(fromEncrypt);
+
+            Console.WriteLine("RoundTrip: {0}", roundTrip);
         }
     }
 }
