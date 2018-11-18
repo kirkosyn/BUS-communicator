@@ -40,7 +40,7 @@ namespace Communicator
         /// Tablica bitów wiadomości
         /// </summary>
         byte[] buffer;
-
+        private bool receive = false;
         /// <summary>
         /// Konstruktor okna
         /// </summary>
@@ -63,7 +63,9 @@ namespace Communicator
                 client.SendMessage(sending);
                 lock (List)
                 {
-                    List.Items.Add("You: " + Message.Text);
+                    List.AppendText("You: " + Message.Text + "\n");
+                    List.SelectionStart = List.Text.Length;
+                    List.ScrollToEnd();
                 }
 
                 Message.Clear();
@@ -86,7 +88,10 @@ namespace Communicator
             mySocket = client.ReturnSocket();
             
             MessageBox.Show("Socket set.");
-           
+            Protocol pro = new Protocol();
+            
+            AddLogs(pro.keyPrivate.ToString(), 1);
+            AddLogs(pro.keyPublic.ToString(), 2);
         }
 
         /// <summary>
@@ -105,6 +110,7 @@ namespace Communicator
             client.SocketConnect(toIp, toPort);
 
             buffer = new byte[1024];
+            receive = true;
             mySocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endRemote,
                new AsyncCallback(MessageCallback), buffer);
 
@@ -122,7 +128,9 @@ namespace Communicator
 
             lock (List)
             {
-                List.Items.Add("You: " + Message.Text);
+                List.AppendText("You: " + Message.Text + "\n");
+                List.SelectionStart = List.Text.Length;
+                List.ScrollToEnd();
             }
             
             Message.Clear();
@@ -136,6 +144,7 @@ namespace Communicator
         /// <param name="e"></param>
         private void SocketDisconnect_Click(object sender, RoutedEventArgs e)
         {
+            receive = false;
             client.SocketClose();
             MessageBox.Show("Disconnected.");
         }
@@ -146,26 +155,50 @@ namespace Communicator
         /// <param name="result">zdarzenie</param>
         private void MessageCallback(IAsyncResult result)
         {
-            try
+            if (receive)
             {
-                this.Dispatcher.Invoke(() =>
+                try
                 {
-                    client.MessageCallback(result);
-
-                    lock (List)
+                    this.Dispatcher.Invoke(() =>
                     {
-                        List.Items.Add("Friend: " + client.ReturnMessage());
-                    }
-                    
-                    buffer = new byte[1024];
-                    mySocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endRemote,
-                        new AsyncCallback(MessageCallback), buffer);
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
+                        client.MessageCallback(result);
+
+                        lock (List)
+                        {
+                            List.AppendText("Friend: " + client.ReturnMessage() + "\n");
+                            List.SelectionStart = List.Text.Length;
+                            List.ScrollToEnd();
+                        }
+
+                        buffer = new byte[1024];
+                        mySocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endRemote,
+                            new AsyncCallback(MessageCallback), buffer);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
             }
         }
+
+        private void AddLogs(string text, int option)
+        {
+            switch(option)
+            {
+                case 1:
+                    Logs.AppendText("Klucz prywatny: ");
+                    break;
+                case 2:
+                    Logs.AppendText("Klucz publiczny: ");
+                    break;
+            }
+
+            Logs.AppendText(text + "\n");
+            Logs.SelectionStart = Logs.Text.Length;
+            Logs.ScrollToEnd();
+        }
+
+       
     }
 }
