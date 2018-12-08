@@ -40,6 +40,8 @@ namespace Communicator
         /// Tajna współdzielona liczba
         /// </summary>
         private BigInteger s;
+
+        private BigInteger receivedNumber;
         
 
         /// <summary>
@@ -49,21 +51,11 @@ namespace Communicator
         {
             primeNumber = GeneratePrimeNumber();
             FindPrimitiveRoot();
+            GenerateNumber();
         }
 
         /// <summary>
-        /// Konstruktor protokołu Diffiego-Hellmana z parametrami
-        /// </summary>
-        /// <param name="primeNumber">liczba pierwsza</param>
-        /// <param name="primitiveRoot">pierwiastek pierwotny</param>
-        public Protocol(int primeNumber, int primitiveRoot)
-        {
-            this.primeNumber = primeNumber;
-            this.primitiveRoot = primitiveRoot;
-        }
-
-        /// <summary>
-        /// Generowanie tajnej liczby całkowitej
+        /// Generowanie własnej tajnej liczby całkowitej
         /// </summary>
         public void GenerateNumber()
         {
@@ -84,10 +76,10 @@ namespace Communicator
         /// Obliczanie współdzielonej liczby
         /// </summary>
         /// <param name="number">liczba uzyskana od drugiej osoby</param>
-        public void CalculateReceivedNumber(BigInteger number)
+        public void CalculateReceivedNumber()
         {
             s = new BigInteger();
-            s = BigInteger.ModPow(number, secretNumber, primeNumber);
+            s = BigInteger.ModPow(receivedNumber, secretNumber, primeNumber);
         }
         /// <summary>
         /// Generowanie liczby pierwszej z pliku
@@ -229,6 +221,34 @@ namespace Communicator
         public void SetPrimitiveRoot(int primitiveRoot)
         {
             this.primitiveRoot = primitiveRoot;
+        }
+
+        /// <summary>
+        /// Zwraca wartość wyliczonej liczby do wyznaczenia współdzielonego klucza
+        /// </summary>
+        /// <returns>wartość tekstowa</returns>
+        public string GetNumberToSend()
+        {
+            return numberToSend.ToString();
+        }
+
+        /// <summary>
+        /// Ustawia odebraną liczbę do wyznaczenia współdzielonego klucza
+        /// </summary>
+        /// <param name="number"></param>
+        public void SetReceivedNumber(string number)
+        {
+            receivedNumber = BigInteger.Parse(number);
+        }
+
+        public string GetReceivedNumber()
+        {
+            return receivedNumber.ToString();
+        }
+
+        public string GetSecretKey()
+        {
+            return s.ToString();
         }
     }
 }

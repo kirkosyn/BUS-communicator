@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -19,7 +20,7 @@ namespace Communicator
         /// <summary>
         /// Tablica bitów wiadomości
         /// </summary>
-        private byte[] buffer = new byte[1024];
+        private byte[] buffer = new byte[2048];
         /// <summary>
         /// Zakończenie gniazdka
         /// </summary>
@@ -28,6 +29,15 @@ namespace Communicator
         /// Odebrana wiadomość
         /// </summary>
         string receivedMessage = "";
+
+        public Tuple<byte[], byte[]> signed;
+
+        public byte[] encryptMsg;
+        private byte[] encryptSig;
+
+        public SignProgram sign;
+        public Protocol protocol;
+        //public RSAParameters PublicParameters;
 
         /// <summary>
         /// Konstruktor socketa clienta
@@ -43,6 +53,8 @@ namespace Communicator
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             clientSocket.Bind(localEndPoint);
 
+            sign = new SignProgram();
+            protocol = new Protocol();
             
         }
 
@@ -107,7 +119,6 @@ namespace Communicator
                 Array.Copy(receivedData, auxtrim, i + 1);
 
                 receivedMessage = encoding.GetString(auxtrim);
-                
             }
             catch (Exception ex)
             {
@@ -128,12 +139,54 @@ namespace Communicator
         /// Wysyłanie wiadomości do socketa
         /// </summary>
         /// <param name="data">treść wiadomości</param>
-        public void SendMessage(string data)
+        public void SendMessage(string data, int option)
         {
             ASCIIEncoding enc = new ASCIIEncoding();
-            byte[] sending = new byte[1024];
-            sending = enc.GetBytes(data);
-            clientSocket.Send(sending);
+            string sending;
+            string msgOption;
+            byte[] endMsg = new byte[1024];
+
+            switch (option)
+            {
+                case 1:
+                    msgOption = "M";
+                    sending = sign.ownPubKey.Item1;
+                    break;
+                case 2:
+                    msgOption = "E";
+                    sending = sign.ownPubKey.Item2;
+                    break;
+                case 3:
+                    msgOption = "K";
+                    ExchangeKeysMsg(sign.GetClientKeys());
+                    sending = Convert.ToBase64String(signed.Item1);
+                    break;
+                case 4:
+                    msgOption = "S";
+                    //ExchangeKeysMsg(sign.GetClientKeys());
+                    sending = Convert.ToBase64String(signed.Item2);
+                    break;
+                case 5:
+                    msgOption = "P";
+                    sending = protocol.GetPrimeNumber().ToString();
+                    break;
+                case 6:
+                    msgOption = "R";
+                    sending = protocol.GetPrimitiveRoot().ToString();
+                    break;
+                case 7:
+                    msgOption = "B";
+                    protocol.CreateNumberToSend();
+                    sending = protocol.GetNumberToSend();
+                    break;
+                default:
+                    msgOption = "D";
+                    sending = data;
+                    break;
+            }
+            
+            endMsg = enc.GetBytes(String.Concat(msgOption, sending));
+            clientSocket.Send(endMsg);
         }
 
         /// <summary>
@@ -147,8 +200,58 @@ namespace Communicator
             return msg;
         }
 
+        public void ExchangeKeysMsg(RSAParameters clientSign)
+        {
+            byte[] toEncrypt;
+            byte[] encrypted;
+            byte[] signature;
+
+            //string original = String.Concat(protocol.GetReceivedNumber());
+            string original = "hello";
+            ASCIIEncoding myAscii = new ASCIIEncoding();
+
+            toEncrypt = myAscii.GetBytes(original);
+
+            encrypted = sign.EncryptData(clientSign, toEncrypt);
+            signature = sign.HashSign(encrypted);
+
+            signed = Tuple.Create(encrypted, signature);
+
+            //return tuple;
+        }
+
+        public string VerifyMsg()
+        {
+            //RSAParameters clientSign = sign.GetClientKeys();
+            byte[] encrypted = encryptMsg;
+            byte[] signature = encryptSig;
+
+            //if (sign.VerifyHash(clientSign, encrypted, signature))
+            //{
+                //MessageBox.Show(sign.DecryptData(encrypted));
+                return sign.DecryptData(encrypted);
+            //}
+            //else
+            //{
+                //MessageBox.Show("Invalid");
+             //   return "Invalid";
+            //}
+        }
+
+        public void SetEncryptMsg(string msg)
+        {
+            encryptMsg = Convert.FromBase64String(msg);
+        }
+
+        public void SetEncryptSig(string msg)
+        {
+            encryptSig = Convert.FromBase64String(msg);
+        }
 
 
+
+
+        //możliwe że do usunięcia
         public void Accept()
         {
             clientSocket.Listen(200);

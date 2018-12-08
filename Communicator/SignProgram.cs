@@ -6,24 +6,17 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace Communicator
 {
     class SignProgram
     {
-        /// <summary>
-        /// Klucz własny prywatny
-        /// </summary>
-        private Tuple<BigInteger, BigInteger> keyPrivate;
-        /// <summary>
-        /// Klucz własny publiczny
-        /// </summary>
-        public Tuple<BigInteger, BigInteger> keyPublic;
-        /// <summary>
-        /// Klucz publiczny drugiej strony
-        /// </summary>
-        public Tuple<BigInteger, BigInteger> clientKeyPublic;
-        private byte[] signature;
+        RSAParameters rsaPubParams;
+        RSAParameters rsaPrivateParams;
+        public string clientModulus;
+        public string clientExponent;
+        public Tuple<string, string> ownPubKey;
 
         /// <summary>
         /// Konstruktor
@@ -31,102 +24,47 @@ namespace Communicator
         public SignProgram()
         {
             SetKeys();
-            signature = HashSign("Hello");
+            ToFileRsa(rsaPrivateParams, rsaPubParams);
+            ReadXml(@"publicKeyPath.xml");
         }
-        /// <summary>
-        /// Generowanie liczby pierwszej z pliku
-        /// </summary>
-        public int GeneratePrimeNumber()
-        {
-            string fileStream = @"primes.txt", line;
-            Random rnd = new Random();
-            int number = rnd.Next(0, 9999) * 2;
-            line = File.ReadLines(fileStream).Skip(number).Take(1).First();
-
-            return Int32.Parse(line);
-        }
-        /// <summary>
-        /// Znajdowanie liczby względnie pierwszej
-        /// </summary>
-        /// <param name="a">1. liczba pierwsza</param>
-        /// <param name="b">2. liczba pierwsza</param>
-        /// <param name="n">iloczyn dwóch liczb pierwszych</param>
-        /// <returns></returns>
-        public BigInteger FindCoprime(BigInteger a, BigInteger b, BigInteger n)
-        {
-            BigInteger result = BigInteger.Multiply((a - 1), (b - 1));
-            BigInteger coprime = n - 1;
-            while (coprime != 0)
-            {
-                if (BigInteger.GreatestCommonDivisor(coprime, result) == 1)
-                    break;
-                coprime--;
-            }
-            return coprime;
-        }
-
-        /// <summary>
-        /// Odwrotność modulo
-        /// </summary>
-        /// <param name="a">1. liczba</param>
-        /// <param name="b">2. liczba</param>
-        /// <returns></returns>
-        public BigInteger ModInverse(BigInteger a, BigInteger b)
-        {
-            BigInteger b0 = b, t, q;
-            BigInteger x0 = 0, x1 = 1;
-            if (b == 1)
-                return 1;
-            while (a > 1)
-            {
-                q = BigInteger.Divide(a, b);
-                t = b;
-                b = BigInteger.ModPow(a, 1, b);
-                a = t;
-                t = x0;
-                x0 = BigInteger.Subtract(x1, BigInteger.Multiply(q, x0));
-                x1 = t;
-            }
-            if (x1 < 0)
-                x1 = BigInteger.Add(x1, b0);
-
-            return x1;
-        }
+       
 
         /// <summary>
         /// Ustawienie kluczy własnych
         /// </summary>
         public void SetKeys()
         {
-            int p, q;
-            p = GeneratePrimeNumber();
-            q = GeneratePrimeNumber();
+            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+            
+            rsaPrivateParams = rsaCSP.ExportParameters(true);
+            rsaPubParams = rsaCSP.ExportParameters(false);
+            
+        }
 
-            BigInteger n = p * q;
-            BigInteger e = FindCoprime(p, q, n);
+        public RSAParameters GetClientKeys()
+        {
+            ASCIIEncoding myAscii = new ASCIIEncoding();
+            //RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+            RSAParameters _rsaParams = new RSAParameters();
+            
+            _rsaParams.Modulus = myAscii.GetBytes(clientModulus);
+            _rsaParams.Exponent = myAscii.GetBytes(clientExponent);
+        
+            //rsaCSP.ImportParameters(_rsaParams);
 
-            keyPublic = Tuple.Create(n, e);
-            BigInteger d = ModInverse(e, (p - 1) * (q - 1));
-            keyPrivate = Tuple.Create(n, d);
-
+            return _rsaParams;
         }
 
         /// <summary>
         /// Podpis hasha wiadomości
         /// </summary>
-        public byte[] HashSign(string message)
+        public byte[] HashSign(byte[] message)
         {
-            RSAParameters _rsaParams = new RSAParameters();
-            
-            //szyfrowanie następuje własnym prywatnym kluczem
-            _rsaParams.Modulus = keyPrivate.Item1.ToByteArray();
-            _rsaParams.Exponent = keyPrivate.Item2.ToByteArray();
-
             RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
-            rsaCSP.ImportParameters(_rsaParams);
+
+            rsaCSP.ImportParameters(rsaPrivateParams);
 
             HashProgram hash = new HashProgram();
-
             return rsaCSP.SignHash(hash.DoHash(message), CryptoConfig.MapNameToOID("SHA256"));
         }
 
@@ -166,31 +104,102 @@ namespace Communicator
         /// Odszyfrowanie wiadomości
         /// </summary>
         /// <param name="encrypted">wiadomość</param>
-        public void DecryptData(byte[] encrypted)
+        public string DecryptData(byte[] encrypted)
         {
             byte[] fromEncrypt;
             string roundTrip;
             ASCIIEncoding myAscii = new ASCIIEncoding();
             RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
 
-            RSAParameters _rsaParams = new RSAParameters();
-            
-            //odszyfrowanie następuje kluczem własnym prywatnym
-            _rsaParams.Modulus = keyPrivate.Item1.ToByteArray();
-            _rsaParams.Exponent = keyPrivate.Item2.ToByteArray();
-
-            rsaCSP.ImportParameters(_rsaParams);
+            rsaCSP.ImportParameters(rsaPrivateParams);
             fromEncrypt = rsaCSP.Decrypt(encrypted, false);
-            roundTrip = myAscii.GetString(fromEncrypt);
+            return roundTrip = myAscii.GetString(fromEncrypt);
         }
 
         /// <summary>
-        /// Ustawia klucz publiczny clienta
+        /// Pobranie publicznych kluczy RSA
         /// </summary>
-        /// <param name="keys"></param>
-        public void SetClientKeyPublic(Tuple<BigInteger, BigInteger> keys)
+        public RSAParameters PublicParameters
         {
-            clientKeyPublic = Tuple.Create(keys.Item1, keys.Item2);
+            get
+            {
+                return rsaPubParams;
+            }
+        }
+
+        /// <summary>
+        /// Zapis kluczy do pliku xml
+        /// </summary>
+        /// <param name="rsaPriv">klucz prywatny</param>
+        /// <param name="rsaPub">klucz publiczny</param>
+        public static void ToFileRsa(RSAParameters rsaPriv, RSAParameters rsaPub)
+        {
+            //stream to save the keys
+            FileStream fs = null;
+            StreamWriter sw = null;
+
+            //create RSA provider
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+            rsa.ImportParameters(rsaPriv);
+            try
+            {
+                //save private key
+                fs = new FileStream("privateKeyPath.xml", FileMode.Create, FileAccess.Write);
+                sw = new StreamWriter(fs);
+                sw.Write(rsa.ToXmlString(true));
+                sw.Flush();
+            }
+            finally
+            {
+                if (sw != null) sw.Close();
+                if (fs != null) fs.Close();
+            }
+
+            rsa.ImportParameters(rsaPub);
+            try
+            {
+                //save public key
+                fs = new FileStream("publicKeyPath.xml", FileMode.Create, FileAccess.Write);
+                sw = new StreamWriter(fs);
+                sw.Write(rsa.ToXmlString(false));
+                sw.Flush();
+            }
+            finally
+            {
+                if (sw != null) sw.Close();
+                if (fs != null) fs.Close();
+            }
+            rsa.Clear();
+        }
+
+        /// <summary>
+        /// Odczyt kluczy
+        /// </summary>
+        /// <param name="filePath">ścieżka do pliku</param>
+        public void ReadXml(string filePath)
+        {
+            string modulus, exponent;
+            XmlDocument doc = new XmlDocument();
+            doc.Load(filePath);
+
+            foreach (XmlNode node in doc.SelectNodes("RSAKeyValue"))
+            {
+                modulus = node.SelectSingleNode("Modulus").InnerText;
+                exponent = node.SelectSingleNode("Exponent").InnerText;
+
+                ownPubKey = Tuple.Create(modulus, exponent);
+            }
+
+        }
+
+        public void SetClientModulus(string data)
+        {
+            clientModulus = data;
+        }
+
+        public void SetClientExponent(string data)
+        {
+            clientExponent = data;
         }
 
     }
