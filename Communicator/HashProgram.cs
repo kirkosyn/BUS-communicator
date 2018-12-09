@@ -15,7 +15,7 @@ namespace Communicator
         }
         public byte[] DoHash(string source)
         {
-            using (SHA256 sha256Hash = SHA256.Create())
+            using (SHA1 sha256Hash = SHA1.Create())
             {
                 byte[] hash = GetHash(sha256Hash, source);
                 return hash;
@@ -24,7 +24,7 @@ namespace Communicator
 
         public byte[] DoHash(byte[] source)
         {
-            using (SHA256 sha256Hash = SHA256.Create())
+            using (SHA1 sha256Hash = SHA1.Create())
             {
                 HashAlgorithm hashAlgorithm = sha256Hash;
                 byte[] hash = hashAlgorithm.ComputeHash(source);

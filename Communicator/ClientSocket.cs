@@ -99,7 +99,7 @@ namespace Communicator
             {
                 byte[] receivedData = new byte[1024];
                 receivedData = (byte[])result.AsyncState;
-                ASCIIEncoding encoding = new ASCIIEncoding();
+                //ASCIIEncoding encoding = new ASCIIEncoding();
                 int i;
 
                 if (receivedData.Length > 0)
@@ -118,7 +118,7 @@ namespace Communicator
                 byte[] auxtrim = new byte[i + 1];
                 Array.Copy(receivedData, auxtrim, i + 1);
 
-                receivedMessage = encoding.GetString(auxtrim);
+                receivedMessage = Encoding.UTF8.GetString(auxtrim);
             }
             catch (Exception ex)
             {
@@ -141,7 +141,7 @@ namespace Communicator
         /// <param name="data">treść wiadomości</param>
         public void SendMessage(string data, int option)
         {
-            ASCIIEncoding enc = new ASCIIEncoding();
+            //ASCIIEncoding enc = new ASCIIEncoding();
             string sending;
             string msgOption;
             byte[] endMsg = new byte[1024];
@@ -185,7 +185,7 @@ namespace Communicator
                     break;
             }
             
-            endMsg = enc.GetBytes(String.Concat(msgOption, sending));
+            endMsg = Encoding.UTF8.GetBytes(String.Concat(msgOption, sending));
             clientSocket.Send(endMsg);
         }
 
@@ -200,6 +200,10 @@ namespace Communicator
             return msg;
         }
 
+        /// <summary>
+        /// Tworzy zaszyfrowane klucze do wysłania
+        /// </summary>
+        /// <param name="clientSign">Klucze klienta</param>
         public void ExchangeKeysMsg(RSAParameters clientSign)
         {
             byte[] toEncrypt;
@@ -208,9 +212,9 @@ namespace Communicator
 
             //string original = String.Concat(protocol.GetReceivedNumber());
             string original = "hello";
-            ASCIIEncoding myAscii = new ASCIIEncoding();
+            //ASCIIEncoding myAscii = new ASCIIEncoding();
 
-            toEncrypt = myAscii.GetBytes(original);
+            toEncrypt = Encoding.UTF8.GetBytes(original);
 
             encrypted = sign.EncryptData(clientSign, toEncrypt);
             signature = sign.HashSign(encrypted);
@@ -222,7 +226,7 @@ namespace Communicator
 
         public string VerifyMsg()
         {
-            //RSAParameters clientSign = sign.GetClientKeys();
+            RSAParameters clientSign = sign.GetClientKeys();
             byte[] encrypted = encryptMsg;
             byte[] signature = encryptSig;
 
@@ -240,12 +244,12 @@ namespace Communicator
 
         public void SetEncryptMsg(string msg)
         {
-            encryptMsg = Convert.FromBase64String(msg);
+            encryptMsg = Encoding.UTF8.GetBytes(msg);
         }
 
         public void SetEncryptSig(string msg)
         {
-            encryptSig = Convert.FromBase64String(msg);
+            encryptSig = Encoding.UTF8.GetBytes(msg);
         }
 
 

@@ -17,6 +17,8 @@ namespace Communicator
         public string clientModulus;
         public string clientExponent;
         public Tuple<string, string> ownPubKey;
+        readonly RSAEncryptionPadding padding = RSAEncryptionPadding.OaepSHA1;
+        readonly RSASignaturePadding spadding = RSASignaturePadding.Pkcs1;
 
         /// <summary>
         /// Konstruktor
@@ -27,29 +29,44 @@ namespace Communicator
             ToFileRsa(rsaPrivateParams, rsaPubParams);
             ReadXml(@"publicKeyPath.xml");
         }
-       
+
 
         /// <summary>
         /// Ustawienie kluczy własnych
         /// </summary>
         public void SetKeys()
         {
-            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
-            
-            rsaPrivateParams = rsaCSP.ExportParameters(true);
-            rsaPubParams = rsaCSP.ExportParameters(false);
-            
+            try
+            {
+                using (RSA rsa = RSA.Create())
+                {
+                    rsaPrivateParams = rsa.ExportParameters(true);
+                    rsaPubParams = rsa.ExportParameters(false);
+                }
+            }
+            catch (CryptographicException e)
+            {
+                Console.WriteLine(e.Message);
+
+            }
+
+
         }
 
+        /// <summary>
+        /// Pobranie kluczy klienta
+        /// </summary>
+        /// <returns>klucze</returns>
         public RSAParameters GetClientKeys()
         {
-            ASCIIEncoding myAscii = new ASCIIEncoding();
+            //ASCIIEncoding myAscii = new ASCIIEncoding();
             //RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
-            RSAParameters _rsaParams = new RSAParameters();
-            
-            _rsaParams.Modulus = myAscii.GetBytes(clientModulus);
-            _rsaParams.Exponent = myAscii.GetBytes(clientExponent);
-        
+            RSAParameters _rsaParams = new RSAParameters
+            {
+                Modulus = Encoding.UTF8.GetBytes(clientModulus),
+                Exponent = Encoding.UTF8.GetBytes(clientExponent)
+            };
+
             //rsaCSP.ImportParameters(_rsaParams);
 
             return _rsaParams;
@@ -60,12 +77,13 @@ namespace Communicator
         /// </summary>
         public byte[] HashSign(byte[] message)
         {
-            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+            using (RSA rsa = RSA.Create())
+            {
+                rsa.ImportParameters(rsaPrivateParams);
 
-            rsaCSP.ImportParameters(rsaPrivateParams);
-
-            HashProgram hash = new HashProgram();
-            return rsaCSP.SignHash(hash.DoHash(message), CryptoConfig.MapNameToOID("SHA256"));
+                HashProgram hash = new HashProgram();
+                return rsa.SignHash(hash.DoHash(message), HashAlgorithmName.SHA1, spadding);
+            }
         }
 
         /// <summary>
@@ -76,10 +94,11 @@ namespace Communicator
         /// <returns></returns>
         public byte[] EncryptData(RSAParameters rsaParams, byte[] toEncrypt)
         {
-            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
-
-            rsaCSP.ImportParameters(rsaParams);
-            return rsaCSP.Encrypt(toEncrypt, false);
+            using (RSA rsa = RSA.Create())
+            {
+                rsa.ImportParameters(rsaParams);
+                return rsa.Encrypt(toEncrypt, padding);
+            }
         }
 
         /// <summary>
@@ -91,14 +110,17 @@ namespace Communicator
         /// <returns></returns>
         public bool VerifyHash(RSAParameters rsaParams, byte[] signedData, byte[] signature)
         {
-            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
-            rsaCSP.ImportParameters(rsaParams);
+            using (RSA rsa = RSA.Create())
+            {
+                rsa.ImportParameters(rsaParams);
 
-            bool dataOK = rsaCSP.VerifyData(signedData, CryptoConfig.MapNameToOID("SHA256"), signature);
-            HashProgram hash = new HashProgram();
+                bool dataOK = rsa.VerifyData(signedData, signature, HashAlgorithmName.SHA1, spadding);
+                HashProgram hash = new HashProgram();
 
-            return rsaCSP.VerifyHash(hash.DoHash(signedData), CryptoConfig.MapNameToOID("SHA256"), signature);
+                return rsa.VerifyHash(hash.DoHash(signedData), signature, HashAlgorithmName.SHA1, spadding);
+            }
         }
+        //CryptoConfig.MapNameToOID("SHA256")
 
         /// <summary>
         /// Odszyfrowanie wiadomości
@@ -108,12 +130,16 @@ namespace Communicator
         {
             byte[] fromEncrypt;
             string roundTrip;
-            ASCIIEncoding myAscii = new ASCIIEncoding();
-            RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+            //ASCIIEncoding myAscii = new ASCIIEncoding();
 
-            rsaCSP.ImportParameters(rsaPrivateParams);
-            fromEncrypt = rsaCSP.Decrypt(encrypted, false);
-            return roundTrip = myAscii.GetString(fromEncrypt);
+            using (RSA rsa = RSA.Create())
+            {
+                rsa.ImportParameters(rsaPrivateParams);
+                fromEncrypt = rsa.Decrypt(encrypted, padding);
+            }
+
+
+            return roundTrip = Encoding.UTF8.GetString(fromEncrypt);
         }
 
         /// <summary>
@@ -139,37 +165,39 @@ namespace Communicator
             StreamWriter sw = null;
 
             //create RSA provider
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
-            rsa.ImportParameters(rsaPriv);
-            try
+            using (RSA rsa = RSA.Create())
             {
-                //save private key
-                fs = new FileStream("privateKeyPath.xml", FileMode.Create, FileAccess.Write);
-                sw = new StreamWriter(fs);
-                sw.Write(rsa.ToXmlString(true));
-                sw.Flush();
-            }
-            finally
-            {
-                if (sw != null) sw.Close();
-                if (fs != null) fs.Close();
-            }
+                rsa.ImportParameters(rsaPriv);
+                try
+                {
+                    //save private key
+                    fs = new FileStream("privateKeyPath.xml", FileMode.Create, FileAccess.Write);
+                    sw = new StreamWriter(fs);
+                    sw.Write(rsa.ToXmlString(true));
+                    sw.Flush();
+                }
+                finally
+                {
+                    if (sw != null) sw.Close();
+                    if (fs != null) fs.Close();
+                }
 
-            rsa.ImportParameters(rsaPub);
-            try
-            {
-                //save public key
-                fs = new FileStream("publicKeyPath.xml", FileMode.Create, FileAccess.Write);
-                sw = new StreamWriter(fs);
-                sw.Write(rsa.ToXmlString(false));
-                sw.Flush();
+                rsa.ImportParameters(rsaPub);
+                try
+                {
+                    //save public key
+                    fs = new FileStream("publicKeyPath.xml", FileMode.Create, FileAccess.Write);
+                    sw = new StreamWriter(fs);
+                    sw.Write(rsa.ToXmlString(false));
+                    sw.Flush();
+                }
+                finally
+                {
+                    if (sw != null) sw.Close();
+                    if (fs != null) fs.Close();
+                }
+                rsa.Clear();
             }
-            finally
-            {
-                if (sw != null) sw.Close();
-                if (fs != null) fs.Close();
-            }
-            rsa.Clear();
         }
 
         /// <summary>
@@ -192,11 +220,19 @@ namespace Communicator
 
         }
 
+        /// <summary>
+        /// Ustawienie wartości modulo klienta
+        /// </summary>
+        /// <param name="data">liczba</param>
         public void SetClientModulus(string data)
         {
             clientModulus = data;
         }
 
+        /// <summary>
+        /// Ustawienie wartości wykładnika potęgi klienta
+        /// </summary>
+        /// <param name="data">liczba</param>
         public void SetClientExponent(string data)
         {
             clientExponent = data;

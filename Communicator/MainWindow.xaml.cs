@@ -133,7 +133,7 @@ namespace Communicator
         /// <param name="e"></param>
         private void SendMessage(object sender, RoutedEventArgs e)
         {
-            string sending = Message.Text;
+            /*string sending = Message.Text;
             //Tuple<byte[], byte[]> tuple = Tuple.Create(client.ExchangeKeysMsg(client.sign).Item1, client.ExchangeKeysMsg(client.sign).Item2);
             //ASCIIEncoding myAscii = new ASCIIEncoding();
 
@@ -144,7 +144,7 @@ namespace Communicator
                 List.ScrollToEnd();
             }
             //Convert.ToBase64String(tuple.Item1) 
-            Message.Clear();
+            Message.Clear();*/
             //client.SendMessage(sending, 0);
 
             if (!sentKeys)
@@ -180,6 +180,11 @@ namespace Communicator
             client.SocketClose();
             MessageBox.Show("Disconnected.");
         }
+
+        /*private void ConnectCallback(IAsyncResult result)
+        {
+            client.ConnectCallback(result);
+        }*/
 
         /// <summary>
         /// Przy zdarzeniu odebrania wiadomości pobiera ją i wypisuje do chatu
@@ -221,13 +226,13 @@ namespace Communicator
                                 break;
                             case 'K':
                                 client.SetEncryptMsg(msgCut);
-                                AddLogs(msgCut, 5);
+                                AddLogs(Convert.ToBase64String(client.encryptMsg) + "\n\n" + msgCut, 5);
                                 break;
                             case 'S':
                                 gotSignature = true;
                                 client.SetEncryptSig(msgCut);
                                 AddLogs(msgCut, 6);
-                                AddLogs(client.VerifyMsg(), 10);
+                                //AddLogs(client.VerifyMsg(), 10);
                                 break;
                             case 'P':
                                 client.protocol.SetPrimeNumber(Int32.Parse(msgCut));
@@ -291,8 +296,6 @@ namespace Communicator
                     break;
                 case 10:
                     Logs.AppendText("Sprawdzono przysłaną wiadomość i sygnaturę\n");
-                    break;
-                default:
                     break;
             }
 
