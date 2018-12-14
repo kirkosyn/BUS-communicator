@@ -232,7 +232,7 @@ namespace Communicator
                                 gotSignature = true;
                                 client.SetEncryptSig(msgCut);
                                 AddLogs(msgCut, 6);
-                                //AddLogs(client.VerifyMsg(), 10);
+                                AddLogs(client.VerifyMsg(), 10);
                                 break;
                             case 'P':
                                 client.protocol.SetPrimeNumber(Int32.Parse(msgCut));

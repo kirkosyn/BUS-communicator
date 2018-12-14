@@ -214,10 +214,12 @@ namespace Communicator
             string original = "hello";
             //ASCIIEncoding myAscii = new ASCIIEncoding();
 
+            signature = sign.HashSign(Encoding.UTF8.GetBytes(original));
+
             toEncrypt = Encoding.UTF8.GetBytes(original);
 
             encrypted = sign.EncryptData(clientSign, toEncrypt);
-            signature = sign.HashSign(encrypted);
+            //signature = sign.HashSign(encrypted);
 
             signed = Tuple.Create(encrypted, signature);
 
@@ -232,8 +234,10 @@ namespace Communicator
 
             //if (sign.VerifyHash(clientSign, encrypted, signature))
             //{
-                //MessageBox.Show(sign.DecryptData(encrypted));
-                return sign.DecryptData(encrypted);
+            //MessageBox.Show(sign.DecryptData(encrypted));
+
+            return sign.VerifyHash(clientSign, encrypted, signature).ToString();
+            //return sign.DecryptData(encrypted);
             //}
             //else
             //{

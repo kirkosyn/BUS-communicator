@@ -17,7 +17,7 @@ namespace Communicator
         public string clientModulus;
         public string clientExponent;
         public Tuple<string, string> ownPubKey;
-        readonly RSAEncryptionPadding padding = RSAEncryptionPadding.OaepSHA1;
+        readonly RSAEncryptionPadding padding = RSAEncryptionPadding.Pkcs1;
         readonly RSASignaturePadding spadding = RSASignaturePadding.Pkcs1;
 
         /// <summary>
@@ -82,7 +82,8 @@ namespace Communicator
                 rsa.ImportParameters(rsaPrivateParams);
 
                 HashProgram hash = new HashProgram();
-                return rsa.SignHash(hash.DoHash(message), HashAlgorithmName.SHA1, spadding);
+
+                return rsa.SignHash(hash.DoHash(message), HashAlgorithmName.SHA256, spadding);
             }
         }
 
@@ -97,6 +98,7 @@ namespace Communicator
             using (RSA rsa = RSA.Create())
             {
                 rsa.ImportParameters(rsaParams);
+
                 return rsa.Encrypt(toEncrypt, padding);
             }
         }
@@ -114,10 +116,10 @@ namespace Communicator
             {
                 rsa.ImportParameters(rsaParams);
 
-                bool dataOK = rsa.VerifyData(signedData, signature, HashAlgorithmName.SHA1, spadding);
+                bool dataOK = rsa.VerifyData(signedData, signature, HashAlgorithmName.SHA256, spadding);
                 HashProgram hash = new HashProgram();
 
-                return rsa.VerifyHash(hash.DoHash(signedData), signature, HashAlgorithmName.SHA1, spadding);
+                return rsa.VerifyHash(hash.DoHash(signedData), signature, HashAlgorithmName.SHA256, spadding);
             }
         }
         //CryptoConfig.MapNameToOID("SHA256")

@@ -15,18 +15,19 @@ namespace Communicator
         }
         public byte[] DoHash(string source)
         {
-            using (SHA1 sha256Hash = SHA1.Create())
+            using (SHA256 SHA256Hash = SHA256.Create())
             {
-                byte[] hash = GetHash(sha256Hash, source);
+                
+                byte[] hash = GetHash(SHA256Hash, source);
                 return hash;
             }
         }
 
         public byte[] DoHash(byte[] source)
         {
-            using (SHA1 sha256Hash = SHA1.Create())
+            using (SHA256 SHA256Hash = SHA256.Create())
             {
-                HashAlgorithm hashAlgorithm = sha256Hash;
+                HashAlgorithm hashAlgorithm = SHA256Hash;
                 byte[] hash = hashAlgorithm.ComputeHash(source);
                 return hash;
             }
