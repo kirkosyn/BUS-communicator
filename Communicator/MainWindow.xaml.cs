@@ -195,6 +195,8 @@ namespace Communicator
             {
                 client.SendMessage("", 3);
                 client.SendMessage("", 4);
+                AddLogs(Convert.ToBase64String(client.signed.Item1), 18);
+                AddLogs(Convert.ToBase64String(client.signed.Item2), 17);
             }
                 
 
@@ -251,12 +253,13 @@ namespace Communicator
                                 break;
                             case 'K':
                                 client.SetEncryptMsg(msgCut);
-                                AddLogs(Convert.ToBase64String(client.encryptMsg) + "\n\n" + msgCut, 5);
+                                AddLogs(msgCut, 5);
                                 break;
                             case 'S':
                                 gotSignature = true;
                                 client.SetEncryptSig(msgCut);
                                 AddLogs(msgCut, 6);
+                                //Convert.ToBase64String(client.encryptMsg) + "\n\n" + 
                                 AddLogs(client.VerifyMsg(), 10);
                                 break;
                             case 'P':
@@ -369,6 +372,12 @@ namespace Communicator
                     break;
                 case 16:
                     Logs.AppendText("Odebrano wartość D\n");
+                    break;
+                case 17:
+                    Logs.AppendText("Wysłano sygnaturę podpisu\n");
+                    break;
+                case 18:
+                    Logs.AppendText("Wysłano podpisaną wiadomość\n");
                     break;
 
             }

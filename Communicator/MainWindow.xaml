@@ -5,12 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Communicator"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450.803" Width="723.428">
+        Title="MainWindow" Height="693.158" Width="718.981">
     <Grid x:Name="toIP1" Margin="0,0,0.667,6.667">
-        <Button x:Name="SendMsg" Content="SEND" HorizontalAlignment="Left" Height="43" Margin="247,361,0,0" VerticalAlignment="Top" Width="59" Click="SendMessage"/>
+        <Button x:Name="SendMsg" Content="SEND" HorizontalAlignment="Left" Height="43" Margin="247,159,0,0" VerticalAlignment="Top" Width="59" Click="SendMessage" RenderTransformOrigin="0.502,0.514"/>
         <Label Content="CHAT" HorizontalAlignment="Left" Height="32" Margin="10,10,0,0" VerticalAlignment="Top" Width="296"/>
-        <TextBox  x:Name="Message" HorizontalAlignment="Left" Height="43" Margin="10,361,0,0" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Text="Write here..." VerticalAlignment="Top" Width="237" KeyDown="TextBox_Enter"/>
-        <TextBox x:Name="List" HorizontalAlignment="Left" Height="314" Margin="10,47,0,0" VerticalScrollBarVisibility="Auto" VerticalAlignment="Top" Width="296" IsReadOnly="True"/>
+        <TextBox  x:Name="Message" HorizontalAlignment="Left" Height="43" Margin="10,159,0,0" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Text="Write here..." VerticalAlignment="Top" Width="237" KeyDown="TextBox_Enter"/>
+        <TextBox x:Name="List" HorizontalAlignment="Left" Height="107" Margin="10,47,0,0" VerticalScrollBarVisibility="Auto" VerticalAlignment="Top" Width="296" IsReadOnly="True"/>
         <Button x:Name="SocketConnect" Content="CONNECT" HorizontalAlignment="Left" Height="28" Margin="596,126,0,0" VerticalAlignment="Top" Width="106" Click="SocketConnect_Click"/>
         <TextBox x:Name="toIP" HorizontalAlignment="Left" Height="28" Margin="353,126,0,0" TextWrapping="Wrap" Text="127.0.0.2" VerticalAlignment="Top" Width="93" />
         <TextBox x:Name="toPORT" HorizontalAlignment="Left" Height="28" Margin="466,126,0,0" TextWrapping="Wrap" Text="11002" VerticalAlignment="Top" Width="93"/>
@@ -22,8 +22,8 @@
         <Label Content="toPort" HorizontalAlignment="Left" Margin="466,95,0,0" VerticalAlignment="Top" Width="48"/>
         <Button x:Name="SetMySocket" Content="SET MY SOCKET" HorizontalAlignment="Left" Height="28" Margin="596,47,0,0" VerticalAlignment="Top" Width="106" Click="SetMySocket_Click"/>
         <Button x:Name="SocketDisconnect" Content="DISCONNECT" HorizontalAlignment="Left" Height="28" Margin="596,159,0,0" VerticalAlignment="Top" Width="106" Click="SocketDisconnect_Click"/>
-        <TextBox x:Name="Logs" HorizontalAlignment="Left" Height="193" Margin="353,212,0,0" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" IsReadOnly="True" VerticalAlignment="Top" Width="349" RenderTransformOrigin="0.531,0.881" />
-        <Label Content="LOGS" HorizontalAlignment="Left" Margin="353,182,0,0" VerticalAlignment="Top" Width="93" Height="32"/>
+        <TextBox x:Name="Logs" HorizontalAlignment="Left" Height="403" Margin="10,244,0,0" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" IsReadOnly="True" VerticalAlignment="Top" Width="692" RenderTransformOrigin="0.531,0.881" />
+        <Label Content="LOGS" HorizontalAlignment="Left" Margin="10,207,0,0" VerticalAlignment="Top" Width="93" Height="32"/>
 
     </Grid>
 </Window>

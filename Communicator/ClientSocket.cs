@@ -42,7 +42,7 @@ namespace Communicator
         /// <summary>
         /// Odebrany podpis
         /// </summary>
-        private byte[] encryptSig;
+        public byte[] encryptSig;
         /// <summary>
         /// Klucze klienta
         /// </summary>
@@ -162,8 +162,8 @@ namespace Communicator
         /* możliwe opcje:
             1 - wyślij wartość modulo
             2 - wyślij wartość exponenty
-            3 - wyślij zaszyfrowaną wiadomość
-            4 - wyślij podpis
+            3 - wyślij podpisaną wiadomość
+            4 - wyślij sygnaturę
             5 - wyślij liczbę pierwszą
             6 - wyślij pierwiastek pierwotny
             7 - wyślij wyznaczoną wartość, wyliczoną za pomocą tajnej liczby własnej (g^t mod p)
@@ -297,15 +297,15 @@ namespace Communicator
         /// <returns>wartość prawda lub fałsz jako string</returns>
         public string VerifyMsg()
         {
-            byte[] encrypted = encryptMsg;
-            byte[] signature = encryptSig;
+            //byte[] encrypted = encryptMsg;
+            //byte[] signature = encryptSig;
             clientSign = sign.GetClientPublicKeys();
             //if (sign.VerifyHash(clientSign, encrypted, signature))
             //{
             //MessageBox.Show(sign.DecryptData(encrypted));
 
-            return sign.VerifyHash(clientSign, encrypted, signature).ToString();
-            //return sign.DecryptData(encrypted);
+            //return sign.VerifyHash(clientSign, encryptMsg, encryptSig).ToString();
+            return sign.DecryptData(encryptMsg);
             //}
             //else
             //{
@@ -320,7 +320,7 @@ namespace Communicator
         /// <param name="msg">tekst</param>
         public void SetEncryptMsg(string msg)
         {
-            encryptMsg = Encoding.UTF8.GetBytes(msg);
+            encryptMsg = Convert.FromBase64String(msg);
         }
 
         /// <summary>
@@ -329,8 +329,14 @@ namespace Communicator
         /// <param name="msg"></param>
         public void SetEncryptSig(string msg)
         {
-            encryptSig = Encoding.UTF8.GetBytes(msg);
+            encryptSig = Convert.FromBase64String(msg);
         }
+
+
+
+
+
+
 
 
 
