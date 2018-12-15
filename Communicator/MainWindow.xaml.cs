@@ -158,6 +158,15 @@ namespace Communicator
             {
                 client.SendMessage("", 1);
                 client.SendMessage("", 2);
+
+                client.SendMessage("", 8);
+                client.SendMessage("", 9);
+                client.SendMessage("", 10);
+                client.SendMessage("", 11);
+                client.SendMessage("", 12);
+                client.SendMessage("", 13);
+
+
                 client.SendMessage("", 5);
                 client.SendMessage("", 6);
                 sentKeys = true;
@@ -221,7 +230,6 @@ namespace Communicator
                             case 'E':
                                 client.sign.SetClientExponent(msgCut);
                                 AddLogs(msgCut, 4);
-                                gotKeys = true; 
                                 break;
                             case 'D':
                                 lock (List)
@@ -253,6 +261,31 @@ namespace Communicator
                                 client.protocol.SetReceivedNumber(msgCut);
                                 client.protocol.CalculateReceivedNumber();
                                 AddLogs(String.Concat(msgCut, " ", client.protocol.GetSecretKey()), 9);
+                                break;
+                            case 'Q':
+                                client.sign.SetClientQ(msgCut);
+                                AddLogs(msgCut, 11);
+                                break;
+                            case 'T':
+                                client.sign.SetClientP(msgCut);
+                                AddLogs(msgCut, 12);
+                                break;
+                            case 'U':
+                                client.sign.SetClientDP(msgCut);
+                                AddLogs(msgCut, 13);
+                                break;
+                            case 'V':
+                                client.sign.SetClientDQ(msgCut);
+                                AddLogs(msgCut, 14);
+                                break;
+                            case 'W':
+                                client.sign.SetClientInverseQ(msgCut);
+                                AddLogs(msgCut, 15);
+                                break;
+                            case 'X':
+                                client.sign.SetClientD(msgCut);
+                                AddLogs(msgCut, 16);
+                                gotKeys = true;
                                 break;
                             default:
                                 break;
@@ -304,6 +337,25 @@ namespace Communicator
                 case 10:
                     Logs.AppendText("Sprawdzono przysłaną wiadomość i sygnaturę\n");
                     break;
+                case 11:
+                    Logs.AppendText("Odebrano wartość Q\n");
+                    break;
+                case 12:
+                    Logs.AppendText("Odebrano wartość P\n");
+                    break;
+                case 13:
+                    Logs.AppendText("Odebrano wartość DP\n");
+                    break;
+                case 14:
+                    Logs.AppendText("Odebrano wartość DQ\n");
+                    break;
+                case 15:
+                    Logs.AppendText("Odebrano wartość InverseQ\n");
+                    break;
+                case 16:
+                    Logs.AppendText("Odebrano wartość D\n");
+                    break;
+
             }
 
             Logs.AppendText(text + "\n");

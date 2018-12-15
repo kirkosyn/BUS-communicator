@@ -12,8 +12,8 @@ namespace Communicator
 {
     class SignProgram
     {
-        RSAParameters rsaPubParams;
         RSAParameters rsaPrivateParams;
+
         public string clientModulus;
         public string clientExponent;
         public string clientP;
@@ -22,8 +22,10 @@ namespace Communicator
         public string clientDQ;
         public string clientInverseQ;
         public string clientD;
+
         public Tuple<string, string> ownPubKey;
         public List<string> ownPrivKey;
+
         readonly RSAEncryptionPadding padding = RSAEncryptionPadding.Pkcs1;
         readonly RSASignaturePadding spadding = RSASignaturePadding.Pkcs1;
 
@@ -33,7 +35,7 @@ namespace Communicator
         public SignProgram()
         {
             SetKeys();
-            ToFileRsa(rsaPrivateParams, rsaPubParams);
+            ToFileRsa(rsaPrivateParams, PublicParameters);
             ReadPublicXml(@"publicKeyPath.xml");
             ReadPrivateXml(@"privateKeyPath.xml");
         }
@@ -49,7 +51,7 @@ namespace Communicator
                 using (RSA rsa = RSA.Create())
                 {
                     rsaPrivateParams = rsa.ExportParameters(true);
-                    rsaPubParams = rsa.ExportParameters(false);
+                    PublicParameters = rsa.ExportParameters(false);
                 }
             }
             catch (CryptographicException e)
@@ -112,7 +114,7 @@ namespace Communicator
         {
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(rsaPubParams);
+                rsa.ImportParameters(rsaPrivateParams);
 
                 HashProgram hash = new HashProgram();
 
@@ -131,7 +133,7 @@ namespace Communicator
         {
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(rsaPubParams);
+                rsa.ImportParameters(PublicParameters);
 
                 return rsa.Encrypt(toEncrypt, padding);
             }
@@ -181,13 +183,7 @@ namespace Communicator
         /// <summary>
         /// Pobranie publicznych kluczy RSA
         /// </summary>
-        public RSAParameters PublicParameters
-        {
-            get
-            {
-                return rsaPubParams;
-            }
-        }
+        public RSAParameters PublicParameters { get; private set; }
 
         /// <summary>
         /// Zapis kluczy do pliku xml
@@ -274,14 +270,14 @@ namespace Communicator
                 inverseq = node.SelectSingleNode("InverseQ").InnerText;
                 d = node.SelectSingleNode("D").InnerText;
 
-                ownPrivKey.Add(modulus);
-                ownPrivKey.Add(exponent);
-                ownPrivKey.Add(p);
-                ownPrivKey.Add(q);
-                ownPrivKey.Add(dp);
-                ownPrivKey.Add(dq);
-                ownPrivKey.Add(inverseq);
-                ownPrivKey.Add(d);
+                ownPrivKey.Add(modulus); //0
+                ownPrivKey.Add(exponent); //1
+                ownPrivKey.Add(p); //2
+                ownPrivKey.Add(q); //3
+                ownPrivKey.Add(dp); //4
+                ownPrivKey.Add(dq); //5
+                ownPrivKey.Add(inverseq); //6
+                ownPrivKey.Add(d); //7
             }
 
         }

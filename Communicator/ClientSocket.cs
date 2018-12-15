@@ -159,8 +159,8 @@ namespace Communicator
                     break;
                 case 3:
                     msgOption = "K";
-                    clientSign = sign.GetClientPublicKeys();
-                    ExchangeKeysMsg(clientSign);
+                    //clientSign = sign.GetClientPublicKeys();
+                    ExchangeKeysMsg();
                     sending = Convert.ToBase64String(signed.Item1);
                     break;
                 case 4:
@@ -180,6 +180,30 @@ namespace Communicator
                     msgOption = "B";
                     protocol.CreateNumberToSend();
                     sending = protocol.GetNumberToSend();
+                    break;
+                case 8:
+                    msgOption = "Q"; //q
+                    sending = sign.ownPrivKey.ElementAt(3);
+                    break;
+                case 9:
+                    msgOption = "T"; //p
+                    sending = sign.ownPrivKey.ElementAt(2);
+                    break;
+                case 10:
+                    msgOption = "U"; //dp
+                    sending = sign.ownPrivKey.ElementAt(4);
+                    break;
+                case 11:
+                    msgOption = "V"; //dq
+                    sending = sign.ownPrivKey.ElementAt(5);
+                    break;
+                case 12:
+                    msgOption = "W"; //inverseq
+                    sending = sign.ownPrivKey.ElementAt(6);
+                    break;
+                case 13:
+                    msgOption = "X"; //d
+                    sending = sign.ownPrivKey.ElementAt(7);
                     break;
                 default:
                     msgOption = "D";
@@ -206,7 +230,8 @@ namespace Communicator
         /// Tworzy zaszyfrowane klucze do wysłania
         /// </summary>
         /// <param name="clientSign">Klucze klienta</param>
-        public void ExchangeKeysMsg(RSAParameters clientSign)
+        //RSAParameters clientSign
+        public void ExchangeKeysMsg()
         {
             byte[] toEncrypt;
             byte[] encrypted;
@@ -235,7 +260,7 @@ namespace Communicator
         {
             byte[] encrypted = encryptMsg;
             byte[] signature = encryptSig;
-
+            clientSign = sign.GetClientPublicKeys();
             //if (sign.VerifyHash(clientSign, encrypted, signature))
             //{
             //MessageBox.Show(sign.DecryptData(encrypted));
