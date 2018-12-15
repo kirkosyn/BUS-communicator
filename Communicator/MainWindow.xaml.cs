@@ -93,7 +93,14 @@ namespace Communicator
 
             client = new ClientSocket(myIp, myPort);
             mySocket = client.ReturnSocket();
-            AddLogs("", 1);
+            AddLogs("Modulo: " + client.sign.ownPrivKey.ElementAt(0) + "\n" +
+                "Wykladnik: " + client.sign.ownPrivKey.ElementAt(1) + "\n" +
+                "P: " + client.sign.ownPrivKey.ElementAt(2) + "\n" +
+                "Q: " + client.sign.ownPrivKey.ElementAt(3) + "\n" +
+                "DP: " + client.sign.ownPrivKey.ElementAt(4) + "\n" +
+                "DQ: " + client.sign.ownPrivKey.ElementAt(5) + "\n" +
+                "InverseQ: " + client.sign.ownPrivKey.ElementAt(6) + "\n" +
+                "D: " + client.sign.ownPrivKey.ElementAt(7) + "\n", 1);
             AddLogs("Modulo: " + client.sign.ownPubKey.Item1 +
                 "\n" + "Wykladnik: " + client.sign.ownPubKey.Item2, 2);
 

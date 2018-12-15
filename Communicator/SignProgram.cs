@@ -16,7 +16,14 @@ namespace Communicator
         RSAParameters rsaPrivateParams;
         public string clientModulus;
         public string clientExponent;
+        public string clientP;
+        public string clientQ;
+        public string clientDP;
+        public string clientDQ;
+        public string clientInverseQ;
+        public string clientD;
         public Tuple<string, string> ownPubKey;
+        public List<string> ownPrivKey;
         readonly RSAEncryptionPadding padding = RSAEncryptionPadding.Pkcs1;
         readonly RSASignaturePadding spadding = RSASignaturePadding.Pkcs1;
 
@@ -27,7 +34,8 @@ namespace Communicator
         {
             SetKeys();
             ToFileRsa(rsaPrivateParams, rsaPubParams);
-            ReadXml(@"publicKeyPath.xml");
+            ReadPublicXml(@"publicKeyPath.xml");
+            ReadPrivateXml(@"privateKeyPath.xml");
         }
 
 
@@ -54,10 +62,10 @@ namespace Communicator
         }
 
         /// <summary>
-        /// Pobranie kluczy klienta
+        /// Pobranie kluczy publicznych klienta
         /// </summary>
         /// <returns>klucze</returns>
-        public RSAParameters GetClientKeys()
+        public RSAParameters GetClientPublicKeys()
         {
             //ASCIIEncoding myAscii = new ASCIIEncoding();
             //RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
@@ -73,13 +81,38 @@ namespace Communicator
         }
 
         /// <summary>
+        /// Pobranie kluczy prywatnych klienta
+        /// </summary>
+        /// <returns>klucze</returns>
+        public RSAParameters GetClientPrivateKeys()
+        {
+            //ASCIIEncoding myAscii = new ASCIIEncoding();
+            //RSACryptoServiceProvider rsaCSP = new RSACryptoServiceProvider();
+            RSAParameters _rsaParams = new RSAParameters
+            {
+                Modulus = Encoding.UTF8.GetBytes(clientModulus),
+                Exponent = Encoding.UTF8.GetBytes(clientExponent),
+                Q = Encoding.UTF8.GetBytes(clientQ),
+                P = Encoding.UTF8.GetBytes(clientP),
+                DP = Encoding.UTF8.GetBytes(clientDP),
+                DQ = Encoding.UTF8.GetBytes(clientDQ),
+                InverseQ = Encoding.UTF8.GetBytes(clientInverseQ),
+                D = Encoding.UTF8.GetBytes(clientD)
+            };
+
+            //rsaCSP.ImportParameters(_rsaParams);
+
+            return _rsaParams;
+        }
+
+        /// <summary>
         /// Podpis hasha wiadomości
         /// </summary>
         public byte[] HashSign(byte[] message)
         {
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(rsaPrivateParams);
+                rsa.ImportParameters(rsaPubParams);
 
                 HashProgram hash = new HashProgram();
 
@@ -90,14 +123,15 @@ namespace Communicator
         /// <summary>
         /// Szyfrowanie wiadomości RSA
         /// </summary>
-        /// <param name="rsaParams">parametry RSA (klucz publiczny klienta)</param>
+        /// <param name="rsaParams">parametry RSA (klucz publiczny)</param>
         /// <param name="toEncrypt">wiadomość do szyfrowania</param>
         /// <returns></returns>
-        public byte[] EncryptData(RSAParameters rsaParams, byte[] toEncrypt)
+        //RSAParameters rsaParams
+        public byte[] EncryptData(byte[] toEncrypt)
         {
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(rsaParams);
+                rsa.ImportParameters(rsaPubParams);
 
                 return rsa.Encrypt(toEncrypt, padding);
             }
@@ -106,7 +140,7 @@ namespace Communicator
         /// <summary>
         /// Sprawdzenie hasha
         /// </summary>
-        /// <param name="rsaParams">parametry RSA (klucz publiczny klienta)</param>
+        /// <param name="rsaParams">parametry RSA (klucz prywatny klienta)</param>
         /// <param name="signedData">wiadomość podpisana</param>
         /// <param name="signature">podpis</param>
         /// <returns></returns>
@@ -128,7 +162,7 @@ namespace Communicator
         /// Odszyfrowanie wiadomości
         /// </summary>
         /// <param name="encrypted">wiadomość</param>
-        public string DecryptData(byte[] encrypted)
+        public string DecryptData(RSAParameters rsaParams, byte[] encrypted) //klucz prywatny klienta
         {
             byte[] fromEncrypt;
             string roundTrip;
@@ -136,7 +170,7 @@ namespace Communicator
 
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(rsaPrivateParams);
+                rsa.ImportParameters(rsaParams);
                 fromEncrypt = rsa.Decrypt(encrypted, padding);
             }
 
@@ -203,10 +237,10 @@ namespace Communicator
         }
 
         /// <summary>
-        /// Odczyt kluczy
+        /// Odczyt publicznych kluczy
         /// </summary>
         /// <param name="filePath">ścieżka do pliku</param>
-        public void ReadXml(string filePath)
+        public void ReadPublicXml(string filePath)
         {
             string modulus, exponent;
             XmlDocument doc = new XmlDocument();
@@ -218,6 +252,36 @@ namespace Communicator
                 exponent = node.SelectSingleNode("Exponent").InnerText;
 
                 ownPubKey = Tuple.Create(modulus, exponent);
+            }
+
+        }
+
+        public void ReadPrivateXml(string filePath)
+        {
+            string modulus, exponent, p, q, dp, dq, inverseq, d;
+            XmlDocument doc = new XmlDocument();
+            doc.Load(filePath);
+            ownPrivKey = new List<string>();
+
+            foreach (XmlNode node in doc.SelectNodes("RSAKeyValue"))
+            {
+                modulus = node.SelectSingleNode("Modulus").InnerText;
+                exponent = node.SelectSingleNode("Exponent").InnerText;
+                p = node.SelectSingleNode("P").InnerText;
+                q = node.SelectSingleNode("Q").InnerText;
+                dp = node.SelectSingleNode("DP").InnerText;
+                dq = node.SelectSingleNode("DQ").InnerText;
+                inverseq = node.SelectSingleNode("InverseQ").InnerText;
+                d = node.SelectSingleNode("D").InnerText;
+
+                ownPrivKey.Add(modulus);
+                ownPrivKey.Add(exponent);
+                ownPrivKey.Add(p);
+                ownPrivKey.Add(q);
+                ownPrivKey.Add(dp);
+                ownPrivKey.Add(dq);
+                ownPrivKey.Add(inverseq);
+                ownPrivKey.Add(d);
             }
 
         }
@@ -238,6 +302,36 @@ namespace Communicator
         public void SetClientExponent(string data)
         {
             clientExponent = data;
+        }
+
+        public void SetClientD(string data)
+        {
+            clientD = data;
+        }
+
+        public void SetClientQ(string data)
+        {
+            clientQ = data;
+        }
+
+        public void SetClientInverseQ(string data)
+        {
+            clientInverseQ = data;
+        }
+
+        public void SetClientP(string data)
+        {
+            clientP = data;
+        }
+
+        public void SetClientDQ(string data)
+        {
+            clientDQ = data;
+        }
+
+        public void SetClientDP(string data)
+        {
+            clientDP = data;
         }
 
     }

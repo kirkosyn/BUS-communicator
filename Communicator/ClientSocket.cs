@@ -34,6 +34,7 @@ namespace Communicator
 
         public byte[] encryptMsg;
         private byte[] encryptSig;
+        RSAParameters clientSign;
 
         public SignProgram sign;
         public Protocol protocol;
@@ -158,7 +159,8 @@ namespace Communicator
                     break;
                 case 3:
                     msgOption = "K";
-                    ExchangeKeysMsg(sign.GetClientKeys());
+                    clientSign = sign.GetClientPublicKeys();
+                    ExchangeKeysMsg(clientSign);
                     sending = Convert.ToBase64String(signed.Item1);
                     break;
                 case 4:
@@ -214,12 +216,15 @@ namespace Communicator
             string original = "hello";
             //ASCIIEncoding myAscii = new ASCIIEncoding();
 
-            signature = sign.HashSign(Encoding.UTF8.GetBytes(original));
+            //signature = sign.HashSign(Encoding.UTF8.GetBytes(original));
 
             toEncrypt = Encoding.UTF8.GetBytes(original);
 
-            encrypted = sign.EncryptData(clientSign, toEncrypt);
-            //signature = sign.HashSign(encrypted);
+            encrypted = sign.EncryptData(toEncrypt);
+            signature = sign.HashSign(encrypted);
+
+            //sign.VerifyHash(clientSign, encrypted, signature).ToString();
+
 
             signed = Tuple.Create(encrypted, signature);
 
@@ -228,7 +233,6 @@ namespace Communicator
 
         public string VerifyMsg()
         {
-            RSAParameters clientSign = sign.GetClientKeys();
             byte[] encrypted = encryptMsg;
             byte[] signature = encryptSig;
 
