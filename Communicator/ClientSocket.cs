@@ -30,13 +30,31 @@ namespace Communicator
         /// </summary>
         string receivedMessage = "";
 
+        /// <summary>
+        /// Zaszyfrowana wiadomość oraz podpis - do wysłania
+        /// </summary>
         public Tuple<byte[], byte[]> signed;
 
+        /// <summary>
+        /// Zaszyfrowana odebrana wiadomość
+        /// </summary>
         public byte[] encryptMsg;
+        /// <summary>
+        /// Odebrany podpis
+        /// </summary>
         private byte[] encryptSig;
+        /// <summary>
+        /// Klucze klienta
+        /// </summary>
         RSAParameters clientSign;
 
+        /// <summary>
+        /// Obiekt klasy do podpisu cyfrowego
+        /// </summary>
         public SignProgram sign;
+        /// <summary>
+        /// Obiekt klasy do uzgodnienia kluczy (Diffie-Hellman)
+        /// </summary>
         public Protocol protocol;
         //public RSAParameters PublicParameters;
 
@@ -137,9 +155,25 @@ namespace Communicator
         }
 
         /// <summary>
-        /// Wysyłanie wiadomości do socketa
+        /// Wysyłanie wiadomości do socketa z pomocą opcji
         /// </summary>
         /// <param name="data">treść wiadomości</param>
+        /// <param name="option">opcja wiadomości</param>
+        /* możliwe opcje:
+            1 - wyślij wartość modulo
+            2 - wyślij wartość exponenty
+            3 - wyślij zaszyfrowaną wiadomość
+            4 - wyślij podpis
+            5 - wyślij liczbę pierwszą
+            6 - wyślij pierwiastek pierwotny
+            7 - wyślij wyznaczoną wartość, wyliczoną za pomocą tajnej liczby własnej (g^t mod p)
+            8 - wyślij Q
+            9 - wyślij P
+            10 - wyślij DP
+            11 - wyślij DQ
+            12 - wyślij InverseQ
+            13 - wyślij D
+             */
         public void SendMessage(string data, int option)
         {
             //ASCIIEncoding enc = new ASCIIEncoding();
@@ -245,7 +279,8 @@ namespace Communicator
 
             toEncrypt = Encoding.UTF8.GetBytes(original);
 
-            encrypted = sign.EncryptData(toEncrypt);
+            clientSign = sign.GetClientPublicKeys();
+            encrypted = sign.EncryptData(clientSign, toEncrypt);
             signature = sign.HashSign(encrypted);
 
             //sign.VerifyHash(clientSign, encrypted, signature).ToString();
@@ -256,6 +291,10 @@ namespace Communicator
             //return tuple;
         }
 
+        /// <summary>
+        /// Weryfikacja wiadomości
+        /// </summary>
+        /// <returns>wartość prawda lub fałsz jako string</returns>
         public string VerifyMsg()
         {
             byte[] encrypted = encryptMsg;
@@ -275,11 +314,19 @@ namespace Communicator
             //}
         }
 
+        /// <summary>
+        /// Ustawienie zaszyfrowanej wiadomości, która została odebrana
+        /// </summary>
+        /// <param name="msg">tekst</param>
         public void SetEncryptMsg(string msg)
         {
             encryptMsg = Encoding.UTF8.GetBytes(msg);
         }
 
+        /// <summary>
+        /// Ustawienie podpisu, który został odebrany
+        /// </summary>
+        /// <param name="msg"></param>
         public void SetEncryptSig(string msg)
         {
             encryptSig = Encoding.UTF8.GetBytes(msg);

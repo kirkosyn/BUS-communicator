@@ -42,10 +42,25 @@ namespace Communicator
         /// </summary>
         byte[] buffer;
 
+        /// <summary>
+        /// Czy można już odbierać wiadomości
+        /// </summary>
         private bool receive = false;
+        /// <summary>
+        /// Czy odebrano klucze
+        /// </summary>
         private bool gotKeys = false;
+        /// <summary>
+        /// Czy wysłano klucze
+        /// </summary>
         private bool sentKeys = false;
+        /// <summary>
+        /// Czy wysłano wyznaczone liczby: pierwszą oraz pierwiastek pierwotny
+        /// </summary>
         private bool sentNumber = false;
+        /// <summary>
+        /// Czy odebrano podpis
+        /// </summary>
         private bool gotSignature = false;
 
         /// <summary>
@@ -197,13 +212,8 @@ namespace Communicator
             MessageBox.Show("Disconnected.");
         }
 
-        /*private void ConnectCallback(IAsyncResult result)
-        {
-            client.ConnectCallback(result);
-        }*/
-
         /// <summary>
-        /// Przy zdarzeniu odebrania wiadomości pobiera ją i wypisuje do chatu
+        /// Przy zdarzeniu odebrania wiadomości pobiera ją, wypisuje do chatu bądź do obszaru logów
         /// </summary>
         /// <param name="result">zdarzenie</param>
         private void MessageCallback(IAsyncResult result)
@@ -303,6 +313,11 @@ namespace Communicator
             }
         }
 
+        /// <summary>
+        /// Dodawanie logów
+        /// </summary>
+        /// <param name="text">Tekst do wrzucenia do loga</param>
+        /// <param name="option">Opcja</param>
         private void AddLogs(string text, int option)
         {
             switch (option)

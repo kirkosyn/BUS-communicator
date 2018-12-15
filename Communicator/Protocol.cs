@@ -40,7 +40,9 @@ namespace Communicator
         /// Tajna współdzielona liczba
         /// </summary>
         private BigInteger s;
-
+        /// <summary>
+        /// Odebrana liczba od klienta do wyliczenia tajnej współdzielonej liczby
+        /// </summary>
         private BigInteger receivedNumber;
         
 
@@ -241,11 +243,19 @@ namespace Communicator
             receivedNumber = BigInteger.Parse(number);
         }
 
+        /// <summary>
+        /// Zwraca wartość odebranej liczby
+        /// </summary>
+        /// <returns></returns>
         public string GetReceivedNumber()
         {
             return receivedNumber.ToString();
         }
 
+        /// <summary>
+        /// Zwraca wartość tajnej współdzielonej liczby
+        /// </summary>
+        /// <returns></returns>
         public string GetSecretKey()
         {
             return s.ToString();

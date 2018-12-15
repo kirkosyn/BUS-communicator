@@ -12,21 +12,60 @@ namespace Communicator
 {
     class SignProgram
     {
+        /// <summary>
+        /// Prywatne klucze własne
+        /// </summary>
         RSAParameters rsaPrivateParams;
 
+        /// <summary>
+        /// Modulo klienta - do klucza prywatnego
+        /// </summary>
         public string clientModulus;
+        /// <summary>
+        /// Exponent klienta - do klucza prywatnego
+        /// </summary>
         public string clientExponent;
+        /// <summary>
+        /// P klienta - do klucza prywatnego
+        /// </summary>
         public string clientP;
+        /// <summary>
+        /// Q klienta - do klucza prywatnego
+        /// </summary>
         public string clientQ;
+        /// <summary>
+        /// DP klienta - do klucza prywatnego
+        /// </summary>
         public string clientDP;
+        /// <summary>
+        /// DQ klienta - do klucza prywatnego
+        /// </summary>
         public string clientDQ;
+        /// <summary>
+        /// InverseQ klienta - do klucza prywatnego
+        /// </summary>
         public string clientInverseQ;
+        /// <summary>
+        /// D klienta - do klucza prywatnego
+        /// </summary>
         public string clientD;
 
+        /// <summary>
+        /// Własne klucze publiczne - do przesyłu
+        /// </summary>
         public Tuple<string, string> ownPubKey;
+        /// <summary>
+        /// Własne klucze prywatne - do przesyłu
+        /// </summary>
         public List<string> ownPrivKey;
 
+        /// <summary>
+        /// Padding do enkrypcji
+        /// </summary>
         readonly RSAEncryptionPadding padding = RSAEncryptionPadding.Pkcs1;
+        /// <summary>
+        /// Padding do podpisu
+        /// </summary>
         readonly RSASignaturePadding spadding = RSASignaturePadding.Pkcs1;
 
         /// <summary>
@@ -109,7 +148,10 @@ namespace Communicator
 
         /// <summary>
         /// Podpis hasha wiadomości
+        /// <param name="message">wiadomość do zahashowania</param>
+        /// <returns>podpisany hash</returns>
         /// </summary>
+        // prywatne klucze własne
         public byte[] HashSign(byte[] message)
         {
             using (RSA rsa = RSA.Create())
@@ -125,15 +167,14 @@ namespace Communicator
         /// <summary>
         /// Szyfrowanie wiadomości RSA
         /// </summary>
-        /// <param name="rsaParams">parametry RSA (klucz publiczny)</param>
+        /// <param name="rsaParams">parametry RSA (klucz publiczny klienta)</param>
         /// <param name="toEncrypt">wiadomość do szyfrowania</param>
-        /// <returns></returns>
-        //RSAParameters rsaParams
-        public byte[] EncryptData(byte[] toEncrypt)
+        /// <returns>zaszyfrowany tekst</returns>
+        public byte[] EncryptData(RSAParameters rsaParams, byte[] toEncrypt)
         {
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(PublicParameters);
+                rsa.ImportParameters(rsaParams);
 
                 return rsa.Encrypt(toEncrypt, padding);
             }
@@ -142,10 +183,10 @@ namespace Communicator
         /// <summary>
         /// Sprawdzenie hasha
         /// </summary>
-        /// <param name="rsaParams">parametry RSA (klucz prywatny klienta)</param>
+        /// <param name="rsaParams">parametry RSA (klucz publiczny klienta)</param>
         /// <param name="signedData">wiadomość podpisana</param>
         /// <param name="signature">podpis</param>
-        /// <returns></returns>
+        /// <returns>czy hash jest poprawny</returns>
         public bool VerifyHash(RSAParameters rsaParams, byte[] signedData, byte[] signature)
         {
             using (RSA rsa = RSA.Create())
@@ -164,7 +205,8 @@ namespace Communicator
         /// Odszyfrowanie wiadomości
         /// </summary>
         /// <param name="encrypted">wiadomość</param>
-        public string DecryptData(RSAParameters rsaParams, byte[] encrypted) //klucz prywatny klienta
+        /// <returns>odszyfrowany tekst</returns>
+        public string DecryptData(byte[] encrypted) //klucz prywatny klienta
         {
             byte[] fromEncrypt;
             string roundTrip;
@@ -172,7 +214,7 @@ namespace Communicator
 
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(rsaParams);
+                rsa.ImportParameters(rsaPrivateParams);
                 fromEncrypt = rsa.Decrypt(encrypted, padding);
             }
 
@@ -252,6 +294,10 @@ namespace Communicator
 
         }
 
+        /// <summary>
+        /// Odczyt prywatnych kluczy
+        /// </summary>
+        /// <param name="filePath">ścieżka do pliku</param>
         public void ReadPrivateXml(string filePath)
         {
             string modulus, exponent, p, q, dp, dq, inverseq, d;
@@ -300,31 +346,55 @@ namespace Communicator
             clientExponent = data;
         }
 
+        /// <summary>
+        /// Ustawienie wartości D klienta
+        /// </summary>
+        /// <param name="data">liczba</param>
         public void SetClientD(string data)
         {
             clientD = data;
         }
 
+        /// <summary>
+        /// Ustawienie wartości Q klienta
+        /// </summary>
+        /// <param name="data">liczba</param>
         public void SetClientQ(string data)
         {
             clientQ = data;
         }
 
+        /// <summary>
+        /// Ustawienie wartości InverseQ klienta
+        /// </summary>
+        /// <param name="data">liczba</param>
         public void SetClientInverseQ(string data)
         {
             clientInverseQ = data;
         }
 
+        /// <summary>
+        /// Ustawienie wartości P klienta
+        /// </summary>
+        /// <param name="data">liczba</param>
         public void SetClientP(string data)
         {
             clientP = data;
         }
 
+        /// <summary>
+        /// Ustawienie wartości DQ klienta
+        /// </summary>
+        /// <param name="data">liczba</param>
         public void SetClientDQ(string data)
         {
             clientDQ = data;
         }
 
+        /// <summary>
+        /// Ustawienie wartości DP klienta
+        /// </summary>
+        /// <param name="data">liczba</param>
         public void SetClientDP(string data)
         {
             clientDP = data;
