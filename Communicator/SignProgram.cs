@@ -17,47 +17,66 @@ namespace Communicator
         /// </summary>
         RSAParameters rsaPrivateParams;
 
+        //RSAParameters clientPrivKeys;
+
         /// <summary>
         /// Modulo klienta - do klucza prywatnego
         /// </summary>
         public string clientModulus;
+        public byte[] clientModulusToBytes;
+
         /// <summary>
         /// Exponent klienta - do klucza prywatnego
         /// </summary>
         public string clientExponent;
+        public byte[] clientExponentToBytes;
+
         /// <summary>
         /// P klienta - do klucza prywatnego
         /// </summary>
         public string clientP;
+        public byte[] clientPToBytes;
+
         /// <summary>
         /// Q klienta - do klucza prywatnego
         /// </summary>
         public string clientQ;
+        public byte[] clientQToBytes;
+
         /// <summary>
         /// DP klienta - do klucza prywatnego
         /// </summary>
         public string clientDP;
+        public byte[] clientDPToBytes;
+
         /// <summary>
         /// DQ klienta - do klucza prywatnego
         /// </summary>
         public string clientDQ;
+        public byte[] clientDQToBytes;
+
         /// <summary>
         /// InverseQ klienta - do klucza prywatnego
         /// </summary>
         public string clientInverseQ;
+        public byte[] clientInverseQToBytes;
+
         /// <summary>
         /// D klienta - do klucza prywatnego
         /// </summary>
         public string clientD;
+        public byte[] clientDToBytes;
 
         /// <summary>
         /// Własne klucze publiczne - do przesyłu
         /// </summary>
         public Tuple<string, string> ownPubKey;
+        public Tuple<byte[], byte[]> ownPubKeyToBytes;
         /// <summary>
         /// Własne klucze prywatne - do przesyłu
         /// </summary>
         public List<string> ownPrivKey;
+        public List<byte[]> ownPrivKeyToBytes;
 
         /// <summary>
         /// Padding do enkrypcji
@@ -89,8 +108,9 @@ namespace Communicator
             {
                 using (RSA rsa = RSA.Create())
                 {
-                    rsaPrivateParams = rsa.ExportParameters(true);
+                    PrivateParameters = rsa.ExportParameters(true);
                     PublicParameters = rsa.ExportParameters(false);
+                    rsaPrivateParams = PrivateParameters;
                 }
             }
             catch (CryptographicException e)
@@ -116,6 +136,12 @@ namespace Communicator
                 Exponent = Encoding.UTF8.GetBytes(clientExponent)
             };
 
+            RSAParameters _rsaParams2 = new RSAParameters
+            {
+                Modulus = clientModulusToBytes,
+                Exponent = clientExponentToBytes
+            };
+
             //rsaCSP.ImportParameters(_rsaParams);
 
             return _rsaParams;
@@ -139,6 +165,18 @@ namespace Communicator
                 DQ = Encoding.UTF8.GetBytes(clientDQ),
                 InverseQ = Encoding.UTF8.GetBytes(clientInverseQ),
                 D = Encoding.UTF8.GetBytes(clientD)
+            };
+
+            RSAParameters _rsaParams2 = new RSAParameters
+            {
+                Modulus = clientModulusToBytes,
+                Exponent = clientExponentToBytes,
+                Q = clientQToBytes,
+                P = clientPToBytes,
+                DP = clientDPToBytes,
+                DQ = clientDQToBytes,
+                InverseQ = clientInverseQToBytes,
+                D = clientDToBytes
             };
 
             //rsaCSP.ImportParameters(_rsaParams);
@@ -170,12 +208,14 @@ namespace Communicator
         /// <param name="rsaParams">parametry RSA (klucz publiczny klienta)</param>
         /// <param name="toEncrypt">wiadomość do szyfrowania</param>
         /// <returns>zaszyfrowany tekst</returns>
-        public byte[] EncryptData(RSAParameters rsaParams, byte[] toEncrypt)
+        public byte[] EncryptData(RSAParameters rsaParams, byte[] toEncrypt) //RSAParameters rsaParams, 
         {
+            //RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
             using (RSA rsa = RSA.Create())
             {
                 rsa.ImportParameters(rsaParams);
 
+            //return rsa.Encrypt(toEncrypt, false);
                 return rsa.Encrypt(toEncrypt, padding);
             }
         }
@@ -184,8 +224,8 @@ namespace Communicator
         /// Sprawdzenie hasha
         /// </summary>
         /// <param name="rsaParams">parametry RSA (klucz publiczny klienta)</param>
-        /// <param name="signedData">wiadomość podpisana</param>
-        /// <param name="signature">podpis</param>
+        /// <param name="signedData">wiadomość zaszyfrowana</param>
+        /// <param name="signature">sygnatura</param>
         /// <returns>czy hash jest poprawny</returns>
         public bool VerifyHash(RSAParameters rsaParams, byte[] signedData, byte[] signature)
         {
@@ -206,18 +246,20 @@ namespace Communicator
         /// </summary>
         /// <param name="encrypted">wiadomość</param>
         /// <returns>odszyfrowany tekst</returns>
-        public string DecryptData(byte[] encrypted) //klucz prywatny klienta
+        public string DecryptData(byte[] encrypted) //klucz prywatny własny
         {
             byte[] fromEncrypt;
             string roundTrip;
             //ASCIIEncoding myAscii = new ASCIIEncoding();
-
+            //RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(rsaPrivateParams);
+                rsa.ImportParameters(PrivateParameters);
+
+                //fromEncrypt = rsa.Decrypt(encrypted, false);
                 fromEncrypt = rsa.Decrypt(encrypted, padding);
             }
-
+            
 
             return roundTrip = Encoding.UTF8.GetString(fromEncrypt);
         }
@@ -226,6 +268,7 @@ namespace Communicator
         /// Pobranie publicznych kluczy RSA
         /// </summary>
         public RSAParameters PublicParameters { get; private set; }
+        protected RSAParameters PrivateParameters { get; private set; }
 
         /// <summary>
         /// Zapis kluczy do pliku xml
@@ -290,6 +333,7 @@ namespace Communicator
                 exponent = node.SelectSingleNode("Exponent").InnerText;
 
                 ownPubKey = Tuple.Create(modulus, exponent);
+                ownPubKeyToBytes = Tuple.Create(Encoding.UTF8.GetBytes(modulus), Encoding.UTF8.GetBytes(exponent));
             }
 
         }
@@ -304,6 +348,7 @@ namespace Communicator
             XmlDocument doc = new XmlDocument();
             doc.Load(filePath);
             ownPrivKey = new List<string>();
+            ownPrivKeyToBytes = new List<byte[]>();
 
             foreach (XmlNode node in doc.SelectNodes("RSAKeyValue"))
             {
@@ -324,6 +369,15 @@ namespace Communicator
                 ownPrivKey.Add(dq); //5
                 ownPrivKey.Add(inverseq); //6
                 ownPrivKey.Add(d); //7
+
+                ownPrivKeyToBytes.Add(Encoding.UTF8.GetBytes(modulus)); //0
+                ownPrivKeyToBytes.Add(Encoding.UTF8.GetBytes(exponent)); //1
+                ownPrivKeyToBytes.Add(Encoding.UTF8.GetBytes(p)); //2
+                ownPrivKeyToBytes.Add(Encoding.UTF8.GetBytes(q)); //3
+                ownPrivKeyToBytes.Add(Encoding.UTF8.GetBytes(dp)); //4
+                ownPrivKeyToBytes.Add(Encoding.UTF8.GetBytes(dq)); //5
+                ownPrivKeyToBytes.Add(Encoding.UTF8.GetBytes(inverseq)); //6
+                ownPrivKeyToBytes.Add(Encoding.UTF8.GetBytes(d)); //7
             }
 
         }
@@ -336,6 +390,10 @@ namespace Communicator
         {
             clientModulus = data;
         }
+        public void SetClientModulus(byte[] data)
+        {
+            clientModulusToBytes = data;
+        }
 
         /// <summary>
         /// Ustawienie wartości wykładnika potęgi klienta
@@ -344,6 +402,10 @@ namespace Communicator
         public void SetClientExponent(string data)
         {
             clientExponent = data;
+        }
+        public void SetClientExponent(byte[] data)
+        {
+            clientExponentToBytes = data;
         }
 
         /// <summary>
@@ -354,6 +416,10 @@ namespace Communicator
         {
             clientD = data;
         }
+        public void SetClientD(byte[] data)
+        {
+            clientDToBytes = data;
+        }
 
         /// <summary>
         /// Ustawienie wartości Q klienta
@@ -362,6 +428,10 @@ namespace Communicator
         public void SetClientQ(string data)
         {
             clientQ = data;
+        }
+        public void SetClientQ(byte[] data)
+        {
+            clientQToBytes = data;
         }
 
         /// <summary>
@@ -372,6 +442,10 @@ namespace Communicator
         {
             clientInverseQ = data;
         }
+        public void SetClientInverseQ(byte[] data)
+        {
+            clientInverseQToBytes = data;
+        }
 
         /// <summary>
         /// Ustawienie wartości P klienta
@@ -380,6 +454,10 @@ namespace Communicator
         public void SetClientP(string data)
         {
             clientP = data;
+        }
+        public void SetClientP(byte[] data)
+        {
+            clientPToBytes = data;
         }
 
         /// <summary>
@@ -390,6 +468,10 @@ namespace Communicator
         {
             clientDQ = data;
         }
+        public void SetClientDQ(byte[] data)
+        {
+            clientDQToBytes = data;
+        }
 
         /// <summary>
         /// Ustawienie wartości DP klienta
@@ -398,6 +480,10 @@ namespace Communicator
         public void SetClientDP(string data)
         {
             clientDP = data;
+        }
+        public void SetClientDP(byte[] data)
+        {
+            clientDPToBytes = data;
         }
 
     }

@@ -90,7 +90,7 @@ namespace Communicator
         {
             string fileStream = @"primes.txt", line;
             Random rnd = new Random();
-            int number = rnd.Next(0, 9999) * 2;
+            int number = rnd.Next(0, 9590) * 2;
             line = File.ReadLines(fileStream).Skip(number).Take(1).First();
 
             return Int32.Parse(line);
@@ -197,6 +197,13 @@ namespace Communicator
         {
             return primeNumber;
         }
+        public byte[] GetPrimeNumberToBytes()
+        {
+            byte[] intBytes = BitConverter.GetBytes(primeNumber);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(intBytes);
+            return intBytes;
+        }
 
         /// <summary>
         /// Zwraca pierwiastek pierwotny
@@ -206,23 +213,12 @@ namespace Communicator
         {
             return primitiveRoot;
         }
-
-        /// <summary>
-        /// Ustawianie liczby pierwszej
-        /// </summary>
-        /// <param name="primeNumber">wartość liczby</param>
-        public void SetPrimeNumber(int primeNumber)
+        public byte[] GetPrimitiveRootToBytes()
         {
-            this.primeNumber = primeNumber;
-        }
-
-        /// <summary>
-        /// Ustawianie pierwiastka pierwotnego
-        /// </summary>
-        /// <param name="primitiveRoot">wartość pierwiastka</param>
-        public void SetPrimitiveRoot(int primitiveRoot)
-        {
-            this.primitiveRoot = primitiveRoot;
+            byte[] intBytes = BitConverter.GetBytes(primitiveRoot);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(intBytes);
+            return intBytes;
         }
 
         /// <summary>
@@ -233,14 +229,9 @@ namespace Communicator
         {
             return numberToSend.ToString();
         }
-
-        /// <summary>
-        /// Ustawia odebraną liczbę do wyznaczenia współdzielonego klucza
-        /// </summary>
-        /// <param name="number"></param>
-        public void SetReceivedNumber(string number)
+        public byte[] GetNumberToSendToBytes()
         {
-            receivedNumber = BigInteger.Parse(number);
+            return numberToSend.ToByteArray();
         }
 
         /// <summary>
@@ -251,6 +242,10 @@ namespace Communicator
         {
             return receivedNumber.ToString();
         }
+        public byte[] GetReceivedNumberToBytes()
+        {
+            return receivedNumber.ToByteArray();
+        }
 
         /// <summary>
         /// Zwraca wartość tajnej współdzielonej liczby
@@ -260,5 +255,50 @@ namespace Communicator
         {
             return s.ToString();
         }
+        public byte[] GetSecretKeyToBytes()
+        {
+            return s.ToByteArray();
+        }
+
+        /// <summary>
+        /// Ustawianie pierwiastka pierwotnego
+        /// </summary>
+        /// <param name="primitiveRoot">wartość pierwiastka</param>
+        public void SetPrimitiveRoot(int primitiveRoot)
+        {
+            this.primitiveRoot = primitiveRoot;
+        }
+        public void SetPrimitiveRoot(byte[] primitiveRoot)
+        {
+            this.primitiveRoot = BitConverter.ToInt32(primitiveRoot, 0);
+        }
+
+        /// <summary>
+        /// Ustawianie liczby pierwszej
+        /// </summary>
+        /// <param name="primeNumber">wartość liczby</param>
+        public void SetPrimeNumber(int primeNumber)
+        {
+            this.primeNumber = primeNumber;
+        }
+        public void SetPrimeNumber(byte[] primeNumber)
+        {
+            this.primeNumber = BitConverter.ToInt32(primeNumber, 0);
+        }
+
+        /// <summary>
+        /// Ustawia odebraną liczbę do wyznaczenia współdzielonego klucza
+        /// </summary>
+        /// <param name="number"></param>
+        public void SetReceivedNumber(string number)
+        {
+            receivedNumber = BigInteger.Parse(number);
+        }
+        public void SetReceivedNumber(byte[] number)
+        {
+            receivedNumber = new BigInteger(number);
+        }
+
+
     }
 }

@@ -169,6 +169,10 @@ namespace Communicator
             Message.Clear();*/
             //client.SendMessage(sending, 0);
 
+            //client.ExchangeKeysMsg();
+            //string text = client.VerifyMsg();
+            //AddLogs(text, 0);
+            
             if (!sentKeys)
             {
                 client.SendMessage("", 1);
@@ -195,8 +199,8 @@ namespace Communicator
             {
                 client.SendMessage("", 3);
                 client.SendMessage("", 4);
-                AddLogs(Convert.ToBase64String(client.signed.Item1), 18);
-                AddLogs(Convert.ToBase64String(client.signed.Item2), 17);
+                AddLogs(BytesToStr(client.signed.Item1), 18);
+                AddLogs(BytesToStr(client.signed.Item2), 17);
             }
                 
 
@@ -218,7 +222,7 @@ namespace Communicator
         /// Przy zdarzeniu odebrania wiadomości pobiera ją, wypisuje do chatu bądź do obszaru logów
         /// </summary>
         /// <param name="result">zdarzenie</param>
-        private void MessageCallback(IAsyncResult result)
+        /*private void MessageCallback(IAsyncResult result)
         {
             if (receive)
             {
@@ -253,7 +257,9 @@ namespace Communicator
                                 break;
                             case 'K':
                                 client.SetEncryptMsg(msgCut);
-                                AddLogs(msgCut, 5);
+                                AddLogs(client.encryptMsg.Length.ToString(), 5);
+                                AddLogs(client.msgLen.ToString(), 5);
+                                AddLogs(msgCut,5);
                                 break;
                             case 'S':
                                 gotSignature = true;
@@ -314,8 +320,116 @@ namespace Communicator
                     MessageBox.Show(ex.ToString());
                 }
             }
-        }
+        }*/
+        private void MessageCallback(IAsyncResult result)
+        {
+            if (receive)
+            {
+                try
+                {
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        client.MessageCallback(result);
 
+                        byte[] msg = client.ReturnMessageToBytes();
+                        byte[] firstLetter = new byte[4];
+                        Array.Copy(msg, firstLetter, 4);
+
+                        byte[] msgCut = new byte[msg.Length - firstLetter.Length];
+                        System.Buffer.BlockCopy(msg, firstLetter.Length, msgCut, 0, msg.Length - firstLetter.Length);
+
+                        char firstLetterToChar = BitConverter.ToChar(firstLetter, 0);
+                        string msgForLogs = BytesToStr(msgCut);
+                        int length = msg.Length;
+                        int length2 = msgCut.Length;
+                        
+
+                        switch (firstLetterToChar)
+                        {
+                            case 'M':
+                                client.sign.SetClientModulus(msgCut);
+
+                                AddLogs(msgForLogs, 3);
+                                break;
+                            case 'E':
+                                client.sign.SetClientExponent(msgCut);
+                                AddLogs(msgForLogs, 4);
+                                break;
+                            case 'D':
+                                lock (List)
+                                {
+                                    List.AppendText("Friend: " + msgForLogs + "\n");
+                                    List.SelectionStart = List.Text.Length;
+                                    List.ScrollToEnd();
+                                }
+                                break;
+                            case 'K':
+                                client.SetEncryptMsg(msgCut);
+                                AddLogs(msgForLogs, 5);
+                                break;
+                            case 'S':
+                                gotSignature = true;
+                                client.SetEncryptSig(msgCut);
+                                AddLogs(msgForLogs, 6);
+                                //Convert.ToBase64String(client.encryptMsg) + "\n\n" + 
+                                AddLogs(client.VerifyMsg(), 10);
+                                break;
+                            case 'P':
+                                byte[] msgVal = AddingZeroes(msgCut);
+                                client.protocol.SetPrimeNumber(msgVal);
+                                AddLogs(BitConverter.ToInt32(msgVal, 0).ToString(), 7);
+                                break;
+                            case 'R':
+                                msgVal = AddingZeroes(msgCut);
+                                client.protocol.SetPrimitiveRoot(msgVal);
+                                AddLogs(BitConverter.ToInt32(msgVal, 0).ToString(), 8);
+                                break;
+                            case 'B':
+                                msgVal = AddingZeroes(msgCut);
+                                client.protocol.SetReceivedNumber(msgVal);
+                                client.protocol.CalculateReceivedNumber();
+                                AddLogs(String.Concat(BitConverter.ToInt32(msgVal, 0).ToString(), " ", client.protocol.GetSecretKey()), 9);
+                                break;
+                            case 'Q':
+                                client.sign.SetClientQ(msgCut);
+                                AddLogs(msgForLogs, 11);
+                                break;
+                            case 'T':
+                                client.sign.SetClientP(msgCut);
+                                AddLogs(msgForLogs, 12);
+                                break;
+                            case 'U':
+                                client.sign.SetClientDP(msgCut);
+                                AddLogs(msgForLogs, 13);
+                                break;
+                            case 'V':
+                                client.sign.SetClientDQ(msgCut);
+                                AddLogs(msgForLogs, 14);
+                                break;
+                            case 'W':
+                                client.sign.SetClientInverseQ(msgCut);
+                                AddLogs(msgForLogs, 15);
+                                break;
+                            case 'X':
+                                client.sign.SetClientD(msgCut);
+                                AddLogs(msgForLogs, 16);
+                                gotKeys = true;
+                                break;
+                            default:
+                                break;
+                        }
+
+                        buffer = new byte[1024];
+                        mySocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endRemote,
+                            new AsyncCallback(MessageCallback), buffer);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
+            }
+        }
         /// <summary>
         /// Dodawanie logów
         /// </summary>
@@ -379,6 +493,8 @@ namespace Communicator
                 case 18:
                     Logs.AppendText("Wysłano podpisaną wiadomość\n");
                     break;
+                default:
+                    break;
 
             }
 
@@ -387,5 +503,23 @@ namespace Communicator
             Logs.ScrollToEnd();
         }
 
+        private string BytesToStr(byte[] data)
+        {
+            return Convert.ToBase64String(data);
+        }
+
+        private byte[] AddingZeroes(byte[] msgCut)
+        {
+            byte[] addByte = new byte[1];
+            byte oneByte = Convert.ToByte(0);
+            addByte[0] = oneByte;
+            byte[] msgVal = new byte[4];
+
+            System.Buffer.BlockCopy(msgCut, 0, msgVal, 0, msgCut.Length);
+            System.Buffer.BlockCopy(addByte, 0, msgVal, 2, 1);
+            System.Buffer.BlockCopy(addByte, 0, msgVal, 3, 1);
+
+            return msgVal;
+        }
     }
 }
