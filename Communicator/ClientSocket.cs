@@ -13,7 +13,6 @@ namespace Communicator
 {
     class ClientSocket
     {
-        
         /// <summary>
         /// Socket clienta
         /// </summary>
@@ -30,8 +29,7 @@ namespace Communicator
         /// Odebrana wiadomość
         /// </summary>
         string receivedMessage = "";
-        byte[] receivedMessageToBytes;
-       // public int msgLen;
+
         /// <summary>
         /// Zaszyfrowana wiadomość oraz podpis - do wysłania
         /// </summary>
@@ -48,8 +46,7 @@ namespace Communicator
         /// <summary>
         /// Klucze klienta
         /// </summary>
-        RSAParameters clientSignPub;
-        RSAParameters clientSignPriv;
+        RSAParameters clientSign;
 
         /// <summary>
         /// Obiekt klasy do podpisu cyfrowego
@@ -75,7 +72,9 @@ namespace Communicator
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             clientSocket.Bind(localEndPoint);
 
+            //uwierzytelnianie
             sign = new SignProgram();
+            //diffle hellman
             protocol = new Protocol();
             
         }
@@ -102,6 +101,16 @@ namespace Communicator
         }
 
         /// <summary>
+        /// Rozpoczyna odbieranie wiadomości
+        /// </summary>
+        public void Receive()
+        {
+            buffer = new byte[1024];
+            clientSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref remoteEndPoint,
+                new AsyncCallback(MessageCallback), buffer);
+        }
+
+        /// <summary>
         /// Przy zdarzeniu dostania wiadomości pobiera ją
         /// </summary>
         /// <param name="result">zdarzenie</param>
@@ -117,7 +126,7 @@ namespace Communicator
                 if (receivedData.Length > 0)
                 {
                     i = receivedData.Length - 1;
-                    while (receivedData[i] == '\0')
+                    while (receivedData[i] == 0)
                     {
                         --i;
                         if (i < 0)
@@ -131,8 +140,6 @@ namespace Communicator
                 Array.Copy(receivedData, auxtrim, i + 1);
 
                 receivedMessage = Encoding.UTF8.GetString(auxtrim);
-                receivedMessageToBytes = new byte[auxtrim.Length];
-                Array.Copy(auxtrim, receivedMessageToBytes, auxtrim.Length);
             }
             catch (Exception ex)
             {
@@ -153,23 +160,22 @@ namespace Communicator
         /// Wysyłanie wiadomości do socketa z pomocą opcji
         /// </summary>
         /// <param name="data">treść wiadomości</param>
-        /// <param name="option">opcja wiadomości</param>
-        /* możliwe opcje:
-            1 - wyślij wartość modulo
-            2 - wyślij wartość exponenty
-            3 - wyślij podpisaną wiadomość
-            4 - wyślij sygnaturę
-            5 - wyślij liczbę pierwszą
-            6 - wyślij pierwiastek pierwotny
-            7 - wyślij wyznaczoną wartość, wyliczoną za pomocą tajnej liczby własnej (g^t mod p)
-            8 - wyślij Q
-            9 - wyślij P
-            10 - wyślij DP
-            11 - wyślij DQ
-            12 - wyślij InverseQ
-            13 - wyślij D
-             */
-        /*public void SendMessage(string data, int option)
+        /// <param name="option">opcja wiadomości, możliwe opcje:
+        ///    1 - wyślij wartość modulo
+        ///    2 - wyślij wartość exponenty
+        ///    3 - wyślij podpisaną wiadomość
+        ///    4 - wyślij sygnaturę
+        ///    5 - wyślij liczbę pierwszą
+        ///    6 - wyślij pierwiastek pierwotny
+        ///    7 - wyślij wyznaczoną wartość, wyliczoną za pomocą tajnej liczby własnej (g^t mod p)
+        ///    8 - wyślij Q
+        ///    9 - wyślij P
+        ///    10 - wyślij DP
+        ///    11 - wyślij DQ
+        ///    12 - wyślij InverseQ
+        ///    13 - wyślij D</param>
+        
+        public void SendMessage(string data, int option)
         {
             //ASCIIEncoding enc = new ASCIIEncoding();
             string sending;
@@ -207,10 +213,10 @@ namespace Communicator
                     break;
                 case 7:
                     msgOption = "B";
-                    protocol.CreateNumberToSend();
+                    //protocol.CreateNumberToSend();
                     sending = protocol.GetNumberToSend();
                     break;
-                case 8:
+                /*case 8:
                     msgOption = "Q"; //q
                     sending = sign.ownPrivKey.ElementAt(3);
                     break;
@@ -233,7 +239,7 @@ namespace Communicator
                 case 13:
                     msgOption = "X"; //d
                     sending = sign.ownPrivKey.ElementAt(7);
-                    break;
+                    break;*/
                 default:
                     msgOption = "D";
                     sending = data;
@@ -242,104 +248,16 @@ namespace Communicator
             
             endMsg = Encoding.UTF8.GetBytes(String.Concat(msgOption, sending));
             clientSocket.Send(endMsg);
-        }*/
-
-        public void SendMessage(string data, int option)
-        {
-            //ASCIIEncoding enc = new ASCIIEncoding();
-            byte[] sending;
-            char msgOption;
-            byte[] msgOptionToBytes = new byte[4];
-            //byte[] endMsg = new byte[1024];
-
-            switch (option)
-            {
-                case 1:
-                    msgOption = 'M';
-                    sending = sign.ownPubKeyToBytes.Item1;
-                    break;
-                case 2:
-                    msgOption = 'E';
-                    sending = sign.ownPubKeyToBytes.Item2;
-                    break;
-                case 3:
-                    msgOption = 'K';
-                    //clientSign = sign.GetClientPublicKeys();
-                    ExchangeKeysMsg();
-                    sending = signed.Item1;
-                    break;
-                case 4:
-                    msgOption = 'S';
-                    //ExchangeKeysMsg(sign.GetClientKeys());
-                    sending = signed.Item2;
-                    break;
-                case 5:
-                    msgOption = 'P';
-                    sending = protocol.GetPrimeNumberToBytes();
-                    break;
-                case 6:
-                    msgOption = 'R';
-                    sending = protocol.GetPrimitiveRootToBytes();
-                    break;
-                case 7:
-                    msgOption = 'B';
-                    protocol.CreateNumberToSend();
-                    sending = protocol.GetNumberToSendToBytes();
-                    break;
-                case 8:
-                    msgOption = 'Q'; //q
-                    sending = sign.ownPrivKeyToBytes.ElementAt(3);
-                    break;
-                case 9:
-                    msgOption = 'T'; //p
-                    sending = sign.ownPrivKeyToBytes.ElementAt(2);
-                    break;
-                case 10:
-                    msgOption = 'U'; //dp
-                    sending = sign.ownPrivKeyToBytes.ElementAt(4);
-                    break;
-                case 11:
-                    msgOption = 'V'; //dq
-                    sending = sign.ownPrivKeyToBytes.ElementAt(5);
-                    break;
-                case 12:
-                    msgOption = 'W'; //inverseq
-                    sending = sign.ownPrivKeyToBytes.ElementAt(6);
-                    break;
-                case 13:
-                    msgOption = 'X'; //d
-                    sending = sign.ownPrivKeyToBytes.ElementAt(7);
-                    break;
-                default:
-                    msgOption = 'D';
-                    sending = Encoding.UTF8.GetBytes(data);
-                    break;
-            }
-
-            msgOptionToBytes = BitConverter.GetBytes(msgOption);
-
-            byte[] endMsg = new byte[msgOptionToBytes.Length + sending.Length];
-            System.Buffer.BlockCopy(msgOptionToBytes, 0, endMsg, 0, msgOptionToBytes.Length);
-            System.Buffer.BlockCopy(sending, 0, endMsg, msgOptionToBytes.Length, sending.Length);
-            
-            clientSocket.Send(endMsg);
         }
 
         /// <summary>
         /// Zwraca wiadomość, którą socket dostał
         /// </summary>
         /// <returns>wiadomość tekstowa</returns>
-        public string ReturnMessage()
+        public String ReturnMessage()
         {
             string msg = receivedMessage;
             receivedMessage = "";
-            return msg;
-        }
-        public byte[] ReturnMessageToBytes()
-        {
-            byte[] msg = new byte[receivedMessageToBytes.Length];
-            Array.Copy(receivedMessageToBytes, msg, receivedMessageToBytes.Length);
-            
             return msg;
         }
 
@@ -354,20 +272,18 @@ namespace Communicator
             byte[] encrypted;
             byte[] signature;
 
-            //string original = String.Concat(protocol.GetReceivedNumber());
-            string original = "hello";
+            string original = String.Concat(protocol.GetMsgToSign());
+            //string original = "hello";
             //ASCIIEncoding myAscii = new ASCIIEncoding();
 
             //signature = sign.HashSign(Encoding.UTF8.GetBytes(original));
 
             toEncrypt = Encoding.UTF8.GetBytes(original);
 
-            clientSignPub = sign.GetClientPublicKeys();
-            //clientSignPriv = sign.GetClientPrivateKeys();
-            //SignProgram.ToFileRsa(clientSignPriv, clientSignPub);
-            encrypted = sign.EncryptData(clientSignPub, toEncrypt);
+            clientSign = sign.GetClientPublicKeys();
+            encrypted = sign.EncryptData(clientSign, toEncrypt);
             signature = sign.HashSign(encrypted);
-            
+
             //sign.VerifyHash(clientSign, encrypted, signature).ToString();
 
 
@@ -384,19 +300,18 @@ namespace Communicator
         {
             //byte[] encrypted = encryptMsg;
             //byte[] signature = encryptSig;
-            clientSignPriv = sign.GetClientPrivateKeys();
-            //if (sign.VerifyHash(clientSign, encrypted, signature))
-            //{
+            clientSign = sign.GetClientPublicKeys();
+            if (sign.VerifyHash(clientSign, encryptMsg, encryptSig))
+            {
             //MessageBox.Show(sign.DecryptData(encrypted));
 
-            //return sign.VerifyHash(clientSign, encryptMsg, encryptSig).ToString();
             return sign.DecryptData(encryptMsg);
-            //}
-            //else
-            //{
+            }
+            else
+            {
                 //MessageBox.Show("Invalid");
-             //   return "Invalid";
-            //}
+                return "Invalid";
+            }
         }
 
         /// <summary>
@@ -407,10 +322,6 @@ namespace Communicator
         {
             encryptMsg = Convert.FromBase64String(msg);
         }
-        public void SetEncryptMsg(byte[] msg)
-        {
-            encryptMsg = msg;
-        }
 
         /// <summary>
         /// Ustawienie podpisu, który został odebrany
@@ -420,10 +331,7 @@ namespace Communicator
         {
             encryptSig = Convert.FromBase64String(msg);
         }
-        public void SetEncryptSig(byte[] msg)
-        {
-            encryptSig = msg;
-        }
+
 
 
 
@@ -468,14 +376,5 @@ namespace Communicator
 
         }
 
-        /// <summary>
-        /// Rozpoczyna odbieranie wiadomości
-        /// </summary>
-        public void Receive()
-        {
-            buffer = new byte[1024];
-            clientSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref remoteEndPoint,
-                new AsyncCallback(MessageCallback), buffer);
-        }
     }
 }

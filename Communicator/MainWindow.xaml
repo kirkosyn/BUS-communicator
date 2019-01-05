@@ -24,6 +24,7 @@
         <Button x:Name="SocketDisconnect" Content="DISCONNECT" HorizontalAlignment="Left" Height="28" Margin="596,159,0,0" VerticalAlignment="Top" Width="106" Click="SocketDisconnect_Click"/>
         <TextBox x:Name="Logs" HorizontalAlignment="Left" Height="403" Margin="10,244,0,0" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" IsReadOnly="True" VerticalAlignment="Top" Width="692" RenderTransformOrigin="0.531,0.881" />
         <Label Content="LOGS" HorizontalAlignment="Left" Margin="10,207,0,0" VerticalAlignment="Top" Width="93" Height="32"/>
+        <Button x:Name="Authenticate" Content="AUTHENTICATE" HorizontalAlignment="Left" Margin="596,192,0,0" VerticalAlignment="Top" Width="106" Height="28" Click="Authenticate_Click"/>
 
     </Grid>
 </Window>

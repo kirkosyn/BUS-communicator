@@ -197,13 +197,6 @@ namespace Communicator
         {
             return primeNumber;
         }
-        public byte[] GetPrimeNumberToBytes()
-        {
-            byte[] intBytes = BitConverter.GetBytes(primeNumber);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(intBytes);
-            return intBytes;
-        }
 
         /// <summary>
         /// Zwraca pierwiastek pierwotny
@@ -212,65 +205,6 @@ namespace Communicator
         public int GetPrimitiveRoot()
         {
             return primitiveRoot;
-        }
-        public byte[] GetPrimitiveRootToBytes()
-        {
-            byte[] intBytes = BitConverter.GetBytes(primitiveRoot);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(intBytes);
-            return intBytes;
-        }
-
-        /// <summary>
-        /// Zwraca wartość wyliczonej liczby do wyznaczenia współdzielonego klucza
-        /// </summary>
-        /// <returns>wartość tekstowa</returns>
-        public string GetNumberToSend()
-        {
-            return numberToSend.ToString();
-        }
-        public byte[] GetNumberToSendToBytes()
-        {
-            return numberToSend.ToByteArray();
-        }
-
-        /// <summary>
-        /// Zwraca wartość odebranej liczby
-        /// </summary>
-        /// <returns></returns>
-        public string GetReceivedNumber()
-        {
-            return receivedNumber.ToString();
-        }
-        public byte[] GetReceivedNumberToBytes()
-        {
-            return receivedNumber.ToByteArray();
-        }
-
-        /// <summary>
-        /// Zwraca wartość tajnej współdzielonej liczby
-        /// </summary>
-        /// <returns></returns>
-        public string GetSecretKey()
-        {
-            return s.ToString();
-        }
-        public byte[] GetSecretKeyToBytes()
-        {
-            return s.ToByteArray();
-        }
-
-        /// <summary>
-        /// Ustawianie pierwiastka pierwotnego
-        /// </summary>
-        /// <param name="primitiveRoot">wartość pierwiastka</param>
-        public void SetPrimitiveRoot(int primitiveRoot)
-        {
-            this.primitiveRoot = primitiveRoot;
-        }
-        public void SetPrimitiveRoot(byte[] primitiveRoot)
-        {
-            this.primitiveRoot = BitConverter.ToInt32(primitiveRoot, 0);
         }
 
         /// <summary>
@@ -281,9 +215,23 @@ namespace Communicator
         {
             this.primeNumber = primeNumber;
         }
-        public void SetPrimeNumber(byte[] primeNumber)
+
+        /// <summary>
+        /// Ustawianie pierwiastka pierwotnego
+        /// </summary>
+        /// <param name="primitiveRoot">wartość pierwiastka</param>
+        public void SetPrimitiveRoot(int primitiveRoot)
         {
-            this.primeNumber = BitConverter.ToInt32(primeNumber, 0);
+            this.primitiveRoot = primitiveRoot;
+        }
+
+        /// <summary>
+        /// Zwraca wartość wyliczonej liczby do wyznaczenia współdzielonego klucza
+        /// </summary>
+        /// <returns>wartość tekstowa</returns>
+        public string GetNumberToSend()
+        {
+            return numberToSend.ToString();
         }
 
         /// <summary>
@@ -294,11 +242,58 @@ namespace Communicator
         {
             receivedNumber = BigInteger.Parse(number);
         }
-        public void SetReceivedNumber(byte[] number)
+
+        /// <summary>
+        /// Zwraca wartość odebranej liczby
+        /// </summary>
+        /// <returns></returns>
+        public string GetReceivedNumber()
         {
-            receivedNumber = new BigInteger(number);
+            return receivedNumber.ToString();
         }
 
+        /// <summary>
+        /// Zwraca wartość tajnej współdzielonej liczby
+        /// </summary>
+        /// <returns></returns>
+        public string GetSecretKey()
+        {
+            return s.ToString();
+        }
 
+        /// <summary>
+        /// Zwraca wiadomość do podpisania i zaszyfrowania
+        /// </summary>
+        /// <returns></returns>
+        public string GetMsgToSign()
+        {
+            return String.Concat(this.GetReceivedNumber() + " " + this.GetNumberToSend() + " " + this.GetSecretKey());
+        }
+
+        public string GetSecretNumber()
+        {
+            return secretNumber.ToString();
+        }
+
+        /// <summary>
+        /// Sprawdza zgodność odebranych i posiadanych wartości liczb do wyznaczania tajnej współdzielonej liczby
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <returns></returns>
+        public bool CheckNumbers(string msg)
+        {
+            char[] charSeparators = new char[] { ' ' };
+            string[] result;
+            result = msg.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
+
+            int ownNumber = Int32.Parse(result[0]);
+            int clientNumber = Int32.Parse(result[1]);
+            int sValue = Int32.Parse(result[2]);
+
+            if (ownNumber == numberToSend && clientNumber == receivedNumber && sValue == s)
+                return true;
+            else
+                return false;
+        }
     }
 }
