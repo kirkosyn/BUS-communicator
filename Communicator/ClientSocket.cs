@@ -56,7 +56,9 @@ namespace Communicator
         /// Obiekt klasy do uzgodnienia kluczy (Diffie-Hellman)
         /// </summary>
         public Protocol protocol;
+        public AESProgram aes;
         //public RSAParameters PublicParameters;
+        private string halfMsg;
 
         /// <summary>
         /// Konstruktor socketa clienta
@@ -76,6 +78,8 @@ namespace Communicator
             sign = new SignProgram();
             //diffle hellman
             protocol = new Protocol();
+            //aes
+            aes = new AESProgram();
             
         }
 
@@ -168,12 +172,7 @@ namespace Communicator
         ///    5 - wyślij liczbę pierwszą
         ///    6 - wyślij pierwiastek pierwotny
         ///    7 - wyślij wyznaczoną wartość, wyliczoną za pomocą tajnej liczby własnej (g^t mod p)
-        ///    8 - wyślij Q
-        ///    9 - wyślij P
-        ///    10 - wyślij DP
-        ///    11 - wyślij DQ
-        ///    12 - wyślij InverseQ
-        ///    13 - wyślij D</param>
+        ///    </param>
         
         public void SendMessage(string data, int option)
         {
@@ -195,7 +194,7 @@ namespace Communicator
                 case 3:
                     msgOption = "K";
                     //clientSign = sign.GetClientPublicKeys();
-                    ExchangeKeysMsg();
+                    ExchangeKeysMsg(protocol.GetMsgToSign());
                     sending = Convert.ToBase64String(signed.Item1);
                     break;
                 case 4:
@@ -215,6 +214,36 @@ namespace Communicator
                     msgOption = "B";
                     //protocol.CreateNumberToSend();
                     sending = protocol.GetNumberToSend();
+                    break;
+                case 8:
+                    msgOption = "Q";
+                    RSAParameters rsaPub = sign.GetClientPublicKeys();
+                    byte[] encrypted = sign.EncryptData(rsaPub, Encoding.UTF8.GetBytes(sign.GetMsgToSign(1)));
+                    sending = Convert.ToBase64String(encrypted);
+                    break;
+                case 9:
+                    msgOption = "T";
+                    rsaPub = sign.GetClientPublicKeys();
+                    int len = sign.GetMsgToSign(0).Length;
+                    halfMsg = sign.GetMsgToSign(0).Substring(0, len / 2);
+                    encrypted = sign.EncryptData(rsaPub, Encoding.UTF8.GetBytes(halfMsg));
+                    sending = Convert.ToBase64String(encrypted);
+                    break;
+                case 10:
+                    msgOption = "U";
+                    rsaPub = sign.GetClientPublicKeys();
+                    len = sign.GetMsgToSign(0).Length;
+                    halfMsg = sign.GetMsgToSign(0).Substring(len / 2, len/2);
+                    encrypted = sign.EncryptData(rsaPub, Encoding.UTF8.GetBytes(halfMsg));
+                    sending = Convert.ToBase64String(encrypted);
+                    break;
+                case 11:
+                    msgOption = "V"; 
+                    sending = aes.getAesIV();
+                    break;
+                case 12:
+                    msgOption = "W"; 
+                    sending = aes.getAesKeys();
                     break;
                 /*case 8:
                     msgOption = "Q"; //q
@@ -242,7 +271,7 @@ namespace Communicator
                     break;*/
                 default:
                     msgOption = "D";
-                    sending = data;
+                    sending = aes.addSalt(aes.DoAESEnc(data));
                     break;
             }
             
@@ -266,13 +295,13 @@ namespace Communicator
         /// </summary>
         /// <param name="clientSign">Klucze klienta</param>
         //RSAParameters clientSign
-        public void ExchangeKeysMsg()
+        public void ExchangeKeysMsg(string toSign)
         {
             byte[] toEncrypt;
             byte[] encrypted;
             byte[] signature;
 
-            string original = String.Concat(protocol.GetMsgToSign());
+            string original = toSign;
             //string original = "hello";
             //ASCIIEncoding myAscii = new ASCIIEncoding();
 

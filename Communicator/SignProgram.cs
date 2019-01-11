@@ -17,6 +17,8 @@ namespace Communicator
         /// </summary>
         RSAParameters rsaPrivateParams;
 
+        private string timeToSend;
+
         /// <summary>
         /// Modulo klienta - do klucza prywatnego
         /// </summary>
@@ -79,6 +81,11 @@ namespace Communicator
             ToFileRsa(rsaPrivateParams, PublicParameters);
             ReadPublicXml(@"publicKeyPath.xml");
             ReadPrivateXml(@"privateKeyPath.xml");
+            timeToSend = DateTime.Now.ToString("MM/dd/yyyy/HH/mm/ss");
+            HashProgram hash = new HashProgram();
+            string hashedTime = Convert.ToBase64String(hash.DoHash(timeToSend));
+            AddTimeToBase(hashedTime);
+
         }
 
 
@@ -348,7 +355,7 @@ namespace Communicator
         {
             clientExponent = data;
         }
-
+        /*
         /// <summary>
         /// Ustawienie wartości D klienta
         /// </summary>
@@ -402,6 +409,74 @@ namespace Communicator
         {
             clientDP = data;
         }
+        */
+        public string GetTime()
+        {
+            return timeToSend;
+        }
 
+        private void AddTimeToBase(string time)
+        {
+            File.AppendAllText(@"base.txt", time + Environment.NewLine);
+        }
+
+        public bool CheckNumbers(string msg, int option)
+        {
+            bool verifiedAll = false, verifiedTime = false, verifiedKeys = false;
+            char[] charSeparators = new char[] { ' ' };
+            string[] result;
+            result = msg.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
+
+            string time = result[0];
+            switch(option)
+            {
+                case 0:
+                    string modulus = result[1];
+                    if (clientModulus == modulus)
+                        verifiedKeys = true;
+                    break;
+                case 1:
+                    string exponent = result[1];
+                    if (clientExponent == exponent)
+                        verifiedKeys = true;
+                    break;
+                default:
+                    break;
+            }
+
+            string fileStream = @"base.txt", line, hashedTime;
+            HashProgram hash = new HashProgram();
+            hashedTime = Convert.ToBase64String(hash.DoHash(time));
+
+            for (int i = 0; i < File.ReadLines(fileStream).Count(); i++)
+            {
+                line = File.ReadLines(fileStream).Skip(i).Take(1).First();
+                if (line == hashedTime)
+                {
+                    verifiedTime = true;
+                }
+            }
+            
+            verifiedAll = verifiedKeys && verifiedTime;
+
+            return verifiedAll;
+        }
+
+        public string GetMsgToSign(int option)
+        {
+            switch(option)
+            {
+                case 0:
+                    return String.Concat(this.GetTime(), " ", this.ownPubKey.Item1);
+                    
+                case 1:
+                    return String.Concat(this.GetTime(), " ", this.ownPubKey.Item2);
+                    
+                default:
+                    return "";
+            }
+        }
+
+        
     }
 }

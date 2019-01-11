@@ -70,7 +70,8 @@ namespace Communicator
         /// Czy wysłano pierwiastek pierwotny i liczbę pierwszą
         /// </summary>
         private bool sentPrim = false;
-        private bool authenticationCompleted = false;     
+        private bool authenticationCompleted = false;
+        private string halfMsg;
 
         /// <summary>
         /// Konstruktor okna
@@ -95,6 +96,8 @@ namespace Communicator
             if (e.Key == Key.Return)
             {
                 string sending = Message.Text;
+
+                AddLogs(client.aes.DoAESEnc(sending), 19);
 
                 client.SendMessage(sending, 0);
                 lock (List)
@@ -176,7 +179,7 @@ namespace Communicator
             string sending = Message.Text;
             //Tuple<byte[], byte[]> tuple = Tuple.Create(client.ExchangeKeysMsg(client.sign).Item1, client.ExchangeKeysMsg(client.sign).Item2);
             //ASCIIEncoding myAscii = new ASCIIEncoding();
-
+            AddLogs(client.aes.DoAESEnc(sending), 19);
             lock (List)
             {
                 List.AppendText("You: " + sending + "\n");
@@ -217,7 +220,7 @@ namespace Communicator
 
                         string msg = client.ReturnMessage();
                         char firstLetter = msg.ElementAt(0);
-                         string msgCut = msg.Substring(1, msg.Length - 1);
+                        string msgCut = msg.Substring(1, msg.Length - 1);
 
 
                         switch (firstLetter)
@@ -232,9 +235,12 @@ namespace Communicator
                                 gotKeys = true;
                                 break;
                             case 'D':
+                                string aesRes = client.aes.removeSalt(msgCut);
+                                AddLogs(aesRes, 20);
+                                aesRes = client.aes.DoAESDec(aesRes);
                                 lock (List)
                                 {
-                                    List.AppendText("Friend: " + msgCut + "\n");
+                                    List.AppendText("Friend: " + aesRes + "\n");
                                     List.SelectionStart = List.Text.Length;
                                     List.ScrollToEnd();
                                 }
@@ -258,6 +264,11 @@ namespace Communicator
                                 {
                                     SendMsg.IsEnabled = true;
                                     Message.IsEnabled = true;
+                                    client.aes.setSalt(client.protocol.GetSecretKey());
+                                }
+                                else
+                                {
+                                    MessageBox.Show("Authentication went wrong.");
                                 }
 
                                 break;
@@ -278,7 +289,29 @@ namespace Communicator
                                 gotNumber = true;
                                 AddLogs(String.Concat(msgCut, " ", client.protocol.GetSecretKey()), 9);
                                 break;
-                            
+                            case 'Q':
+                                string afterDecryption = client.sign.DecryptData(Convert.FromBase64String(msgCut));
+                                bool isVerified = client.sign.CheckNumbers(afterDecryption, 1);
+                                AddLogs(isVerified.ToString(), 14);
+                                
+                                break;
+                            case 'T':
+                                halfMsg = client.sign.DecryptData(Convert.FromBase64String(msgCut));
+                                //isVerified = client.sign.CheckNumbers(afterDecryption, 0);
+                                //AddLogs(isVerified.ToString(), 3);
+                                break;
+                            case 'U':
+                                afterDecryption = String.Concat(halfMsg, client.sign.DecryptData(Convert.FromBase64String(msgCut)));
+                                isVerified = client.sign.CheckNumbers(afterDecryption, 0);
+                                AddLogs(isVerified.ToString(), 15);
+
+                                break;
+                            case 'V':
+                                client.aes.setAesIV(msgCut);
+                                break;
+                            case 'W':
+                                client.aes.setAesKeys(msgCut);
+                                break;
                             default:
                                 break;
                         }
@@ -344,11 +377,23 @@ namespace Communicator
                 case 13:
                     Logs.AppendText("Wygenerowano własną losową tajną liczbę całkowitą\n");
                     break;
+                case 14:
+                    Logs.AppendText("Sprawdzono czas wystawienia klucza oraz klucz publiczny exponent\n");
+                    break;
+                case 15:
+                    Logs.AppendText("Sprawdzono czas wystawienia klucza oraz klucz publiczny modulo\n");
+                    break;
                 case 17:
                     Logs.AppendText("Wysłano sygnaturę podpisu\n");
                     break;
                 case 18:
                     Logs.AppendText("Wysłano podpisaną wiadomość\n");
+                    break;
+                case 19:
+                    Logs.AppendText("Wysłano zaszyfrowaną wiadomość\n");
+                    break;
+                case 20:
+                    Logs.AppendText("Otrzymano zaszyfrowaną wiadomość\n");
                     break;
 
             }
@@ -364,11 +409,13 @@ namespace Communicator
             {
                 client.SendMessage("", 1);
                 client.SendMessage("", 2);
-
                 sentKeys = true;
             }
             else if (!sentPrim && sentKeys)
             {
+                client.SendMessage("", 8);
+                client.SendMessage("", 9);
+                client.SendMessage("", 10);
                 client.SendMessage("", 5);
                 client.SendMessage("", 6);
                 sentPrim = true;
@@ -386,7 +433,11 @@ namespace Communicator
                 AddLogs(Convert.ToBase64String(client.signed.Item1), 18);
                 AddLogs(Convert.ToBase64String(client.signed.Item2), 17);
 
+                client.SendMessage("", 11);
+                client.SendMessage("", 12);
                 gotNumber = false;
+
+                Authenticate.IsEnabled = false;
             }
             else if (gotSignature && !gotNumber)
             {
@@ -394,8 +445,11 @@ namespace Communicator
                 client.SendMessage("", 4);
                 AddLogs(Convert.ToBase64String(client.signed.Item1), 18);
                 AddLogs(Convert.ToBase64String(client.signed.Item2), 17);
+
+                Authenticate.IsEnabled = false;
             }
 
+            
         }
     }
 }
